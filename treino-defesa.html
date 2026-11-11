@@ -1,0 +1,446 @@
+<title>Treino Defesa Constância</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: coluna única de estudo — filtros no topo, um cartão por vez, placar abaixo. */
+:root {
+  --bg: #f4f6f4;
+  --surface: #ffffff;
+  --fg: #17211d;
+  --muted: #5b6862;
+  --line: #d9e0dc;
+  --accent: #1f6f5c;
+  --accent-soft: #e2efea;
+  --ok: #2f7d3b;
+  --ok-soft: #e3f1e4;
+  --warn: #a35a12;
+  --warn-soft: #f8ead9;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1513; --surface: #17201d; --fg: #e6ece9; --muted: #9aa8a1; --line: #2a3632;
+    --accent: #5fc2a5; --accent-soft: #1d3530; --ok: #74c47f; --ok-soft: #1c3020;
+    --warn: #e8a35c; --warn-soft: #3a2a18; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1513; --surface: #17201d; --fg: #e6ece9; --muted: #9aa8a1; --line: #2a3632;
+  --accent: #5fc2a5; --accent-soft: #1d3530; --ok: #74c47f; --ok-soft: #1c3020;
+  --warn: #e8a35c; --warn-soft: #3a2a18; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 5vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 62ch; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: 500 14px var(--font-body); color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.chip .n { font-family: var(--font-mono); font-size: 12px; opacity: .75; margin-left: 4px; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.progress { display: flex; flex-direction: column; gap: 8px; }
+.bar { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; display: flex; }
+.bar span { display: block; height: 100%; transition: width .25s; }
+.bar .b-ok { background: var(--ok); }
+.bar .b-warn { background: var(--warn); }
+.stats { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 600; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0;
+}
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 3px 8px; border-radius: 6px; }
+.pos { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.status { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+.status.ok { color: var(--ok); background: var(--ok-soft); }
+.status.warn { color: var(--warn); background: var(--warn-soft); }
+.q { font-family: var(--font-display); font-weight: 600; font-size: clamp(19px, 3.6vw, 23px); line-height: 1.3; margin: 0; text-wrap: balance; }
+.panel { border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.panel h3 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.panel p { margin: 0; }
+.hint { background: var(--warn-soft); }
+.hint h3 { color: var(--warn); }
+.answer { background: var(--accent-soft); }
+.answer h3 { color: var(--accent); }
+.where { font-family: var(--font-mono); font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+code { font-family: var(--font-mono); font-size: .9em; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+button.btn {
+  font: 600 15px var(--font-body); border-radius: 10px; padding: 10px 16px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.btn.ok { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+button.btn.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+button:focus-visible, .chip:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nav .right { display: flex; gap: 10px; flex-wrap: wrap; }
+.empty { text-align: center; color: var(--muted); padding: 28px 8px; }
+.keys { font-size: 13px; color: var(--muted); }
+.keys kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+@media (max-width: 480px) { .keys { display: none; } .card { padding: 18px; } }
+@media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Desenvolvimento de Aplicativos Móveis · A1</div>
+    <h1>Treino da defesa do Constância</h1>
+    <p class="lede">Leia a pergunta e responda em voz alta antes de abrir. Se travar, peça a dica. Depois marque se você sabia ou se precisa revisar. O progresso fica salvo neste navegador.</p>
+  </header>
+
+  <div class="chips" id="chips" role="group" aria-label="Filtrar por assunto"></div>
+  <label class="toggle"><input type="checkbox" id="soRevisar"> Mostrar só as que marquei para revisar</label>
+
+  <div class="progress">
+    <div class="bar" aria-hidden="true"><span class="b-ok" id="barOk"></span><span class="b-warn" id="barWarn"></span></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <section class="card" id="card" aria-live="polite"></section>
+
+  <div class="nav">
+    <button class="btn" id="prev">← Anterior</button>
+    <div class="right">
+      <button class="btn" id="shuffle">Embaralhar</button>
+      <button class="btn" id="reset">Zerar progresso</button>
+      <button class="btn" id="next">Próxima →</button>
+    </div>
+  </div>
+  <p class="keys">Atalhos: <kbd>D</kbd> dica · <kbd>Espaço</kbd> resposta · <kbd>S</kbd> sabia · <kbd>R</kbd> revisar · <kbd>←</kbd> <kbd>→</kbd> navegar</p>
+</div>
+
+<script>
+const PERGUNTAS = [
+  // ---------- Room ----------
+  { t: "Room", q: "Quais são as tabelas do app e como elas se relacionam?",
+    d: "Pense em quem é o \"dono\" de quem: usuário → hábito → registro.",
+    r: "São três: <b>usuarios</b>, <b>habitos</b> e <b>registros_diarios</b>. Um usuário tem vários hábitos (<code>Habito.usuarioId</code> é FK para <code>usuarios.id</code>) e um hábito tem vários registros (<code>RegistroDiario.habitoId</code> é FK para <code>habitos.id</code>). O CRUD completo exigido está em Habito e RegistroDiario.",
+    a: "Usuario.kt · Habito.kt · RegistroDiario.kt" },
+  { t: "Room", q: "O que é uma Entity?",
+    d: "Compare com uma classe mapeada no DbContext do Entity Framework.",
+    r: "Uma classe anotada com <code>@Entity</code> que vira tabela. Cada propriedade vira coluna, e <code>@PrimaryKey(autoGenerate = true)</code> funciona como o IDENTITY do SQL Server.",
+    a: "data/local/Habito.kt" },
+  { t: "Room", q: "O que é um DAO e quem escreve a implementação dele?",
+    d: "Você escreveu só uma interface… então quem fez o resto? Lembre do plugin que entrou no Gradle.",
+    r: "DAO (Data Access Object) é a interface com as operações de banco: <code>@Insert</code>, <code>@Query</code>, <code>@Update</code>, <code>@Delete</code>. Eu só declaro; o Room gera a implementação (<code>HabitoDao_Impl</code>) em tempo de compilação, via KSP, como um Source Generator do C#. O SQL das <code>@Query</code> é validado na compilação.",
+    a: "data/local/HabitoDao.kt" },
+  { t: "Room", q: "O que acontece com os registros diários quando eu excluo um hábito?",
+    d: "Olhe a anotação @ForeignKey dentro de RegistroDiario.",
+    r: "São apagados pelo próprio banco, por causa de <code>onDelete = ForeignKey.CASCADE</code> na chave estrangeira <code>habitoId</code>. Não escrevi nenhum código para apagar os registros manualmente.",
+    a: "data/local/RegistroDiario.kt" },
+  { t: "Room", q: "Como você impede que existam dois registros do mesmo hábito no mesmo dia?",
+    d: "A regra está no banco, não só no código. Procure em indices = [...].",
+    r: "Com um índice único em <code>(habitoId, data)</code>. O banco recusa a duplicata. O insert usa <code>OnConflictStrategy.REPLACE</code>, então um toque duplo rápido substitui o registro em vez de quebrar o app.",
+    a: "RegistroDiario.kt · RegistroDiarioDao.kt" },
+  { t: "Room", q: "Para que servem os TypeConverters?",
+    d: "Quais tipos o SQLite entende de verdade?",
+    r: "O SQLite só guarda tipos simples (INTEGER, TEXT, REAL, BLOB). Os converters ensinam o Room a transformar <code>LocalDate</code> em <code>Long</code> (dias desde 1970), <code>LocalTime</code> em texto e <code>Set&lt;DayOfWeek&gt;</code> em \"1,3,5\" — e de volta. É como o <code>HasConversion</code> do EF.",
+    a: "data/local/Converters.kt" },
+  { t: "Room", q: "Por que o banco é um singleton?",
+    d: "Pense em custo de abrir conexão e em várias threads.",
+    r: "Abrir o banco é caro e várias instâncias poderiam conflitar. O <code>companion object</code> guarda uma única instância; <code>@Volatile</code> e <code>synchronized</code> garantem que só uma seja criada mesmo com várias threads.",
+    a: "data/local/ConstanciaDatabase.kt" },
+  { t: "Room", q: "Se você mudar uma entidade, o que precisa fazer no banco?",
+    d: "O banco já subiu de versão uma vez neste projeto. Por quê?",
+    r: "Subir o <code>version</code> do <code>@Database</code> (foi de 1 para 2 quando entrou a tabela usuarios). Configurei <code>fallbackToDestructiveMigration</code>, que recria o banco; num app real eu escreveria uma <code>Migration</code> para não perder dados.",
+    a: "data/local/ConstanciaDatabase.kt" },
+  { t: "Room", q: "Por que as leituras retornam Flow e as escritas são suspend?",
+    d: "Uma leitura precisa avisar a tela quando os dados mudam; uma escrita acontece uma vez.",
+    r: "O <code>Flow</code> emite de novo sempre que a tabela muda, então a tela se atualiza sozinha. Uma escrita é uma operação única que precisa sair da thread principal, por isso é <code>suspend</code> (como um <code>async Task</code>).",
+    a: "data/local/HabitoDao.kt" },
+
+  // ---------- Coroutines e ViewModel ----------
+  { t: "ViewModel", q: "O que é uma coroutine e por que o app usa?",
+    d: "Compare com async/await. O que trava se você acessar o banco na thread da tela?",
+    r: "É código assíncrono leve, como <code>async/await</code> no C#. Room e Retrofit rodam fora da thread da interface, então a tela não trava enquanto o banco ou a internet respondem.",
+    a: "ex.: viewModelScope.launch em HabitosViewModel.kt" },
+  { t: "ViewModel", q: "O que é o viewModelScope?",
+    d: "O que acontece com o trabalho em andamento quando a tela é fechada?",
+    r: "Um escopo de coroutines preso ao ciclo de vida do ViewModel. Quando o ViewModel é destruído, tudo que foi lançado nele é cancelado. Evita trabalho \"órfão\" e vazamentos.",
+    a: "ui/habitos/HabitosViewModel.kt" },
+  { t: "ViewModel", q: "Por que o estado das telas fica no ViewModel e não num remember?",
+    d: "O que o Android faz com a Activity quando você gira o celular?",
+    r: "Ao girar a tela a Activity é destruída e recriada, mas o ViewModel sobrevive. Por isso o que o usuário digitou e os diálogos abertos continuam lá. Um <code>remember</code> comum seria perdido. (Para estado simples da própria tela uso <code>rememberSaveable</code>, como na confirmação de sair.)",
+    a: "HabitoFormViewModel.kt · HabitosScreen.kt" },
+  { t: "ViewModel", q: "Qual a diferença entre Flow e StateFlow?",
+    d: "Um deles sempre tem um valor atual.",
+    r: "<code>StateFlow</code> sempre tem um valor atual, então a tela tem algo para desenhar imediatamente (ex.: \"carregando\"). Converto o Flow do Room em StateFlow com <code>stateIn</code>.",
+    a: "HabitosViewModel.kt" },
+  { t: "ViewModel", q: "O que faz o combine na tela Hoje?",
+    d: "Quantas fontes de dados a tela Hoje precisa juntar?",
+    r: "Junta vários fluxos e recalcula sempre que qualquer um muda: os hábitos do usuário, os registros do dia e o feriado de hoje. É como o <code>CombineLatest</code> do Rx.",
+    a: "ui/hoje/HojeViewModel.kt" },
+  { t: "ViewModel", q: "O que significa SharingStarted.WhileSubscribed(5_000)?",
+    d: "Pense numa rotação de tela: a tela some e volta em menos de 1 segundo.",
+    r: "A consulta continua ativa por 5 segundos depois que a tela deixa de observar. É tempo suficiente para sobreviver a uma rotação sem refazer a consulta, mas para de gastar recursos se o usuário sair da tela.",
+    a: "HabitosViewModel.kt" },
+  { t: "ViewModel", q: "Como o ViewModel recebe o repositório se o Android só sabe criar ViewModels com construtor vazio?",
+    d: "Existe um arquivo que funciona como o container de DI.",
+    r: "Com uma fábrica: <code>AppViewModelProvider.Factory</code> usa <code>viewModelFactory { initializer { ... } }</code> e pega os repositórios do <code>AppContainer</code>, que é minha injeção de dependência manual (como o <code>AddSingleton</code> do Program.cs).",
+    a: "ui/AppViewModelProvider.kt · data/AppContainer.kt" },
+  { t: "ViewModel", q: "Para que serve o Repository se ele quase só repassa chamadas para o DAO?",
+    d: "Quem deveria saber se o dado vem do banco, da API ou de um cache?",
+    r: "Ele esconde a origem dos dados: o ViewModel não sabe se vem do Room, da API ou de cache. Também concentra regras de acesso, como <code>ajustarValor</code> (decide criar, atualizar ou apagar o registro) e o cache e tratamento de erros dos feriados. Facilita trocar a fonte depois.",
+    a: "data/repository/RegistroRepository.kt" },
+
+  // ---------- Compose ----------
+  { t: "Compose", q: "O que é recomposição?",
+    d: "O que acontece com uma função @Composable quando o estado que ela lê muda?",
+    r: "Quando um estado muda, o Compose chama de novo só as funções <code>@Composable</code> que leem esse estado, redesenhando aquela parte da tela. É parecido com o re-render de um componente Blazor.",
+    a: "qualquer *Screen.kt" },
+  { t: "Compose", q: "Para que serve o Scaffold e o innerPadding?",
+    d: "O requisito fala em \"sem sobreposições\".",
+    r: "O <code>Scaffold</code> é a estrutura Material com barra de topo, botão flutuante e Snackbar. Ele entrega o <code>innerPadding</code>, o espaço ocupado pelas barras, para o conteúdo não ficar escondido embaixo delas.",
+    a: "ui/habitos/HabitosScreen.kt" },
+  { t: "Compose", q: "Por que LazyColumn e não Column nas listas?",
+    d: "E se o usuário tiver 500 registros?",
+    r: "<code>LazyColumn</code> só desenha os itens visíveis na tela (lista virtualizada), como o <code>&lt;Virtualize&gt;</code> do Blazor. Uma <code>Column</code> criaria todos os itens de uma vez.",
+    a: "HabitosScreen.kt · HistoricoScreen.kt" },
+  { t: "Compose", q: "Como você trata os estados de carregando, vazio e erro?",
+    d: "Cada UiState tem um campo que diz se está carregando; a tela usa when.",
+    r: "Cada <code>UiState</code> tem <code>carregando</code>. A tela usa <code>when</code> para mostrar um <code>CircularProgressIndicator</code>, uma mensagem de lista vazia ou o cartão de erro com \"Tentar novamente\" (feriados).",
+    a: "HojeScreen.kt · AvisoFeriados.kt" },
+  { t: "Compose", q: "Como funciona a navegação entre as telas?",
+    d: "Rotas em texto, como @page no Blazor. Como o id chega ao ViewModel?",
+    r: "Um <code>NavHost</code> com rotas em texto (<code>hoje</code>, <code>habitos</code>, <code>detalhes/{habitoId}</code>...). O <code>NavController</code> empilha as telas. Os parâmetros da rota chegam ao ViewModel pelo <code>SavedStateHandle</code>.",
+    a: "ui/navigation/ConstanciaApp.kt" },
+
+  // ---------- API ----------
+  { t: "API", q: "Qual API o app consome e como?",
+    d: "Retrofit: você descreve a API como uma interface.",
+    r: "A BrasilAPI de feriados nacionais (<code>/api/feriados/v1/{ano}</code>), com Retrofit. Declaro uma interface com <code>@GET</code> e <code>@Path(\"ano\")</code>, e o Retrofit gera a implementação. O <code>GsonConverterFactory</code> transforma o JSON em <code>FeriadoDto</code>.",
+    a: "data/remote/BrasilApiService.kt · AppContainer.kt" },
+  { t: "API", q: "O que acontece se a API estiver fora do ar ou o celular estiver sem internet?",
+    d: "Quais exceções o FeriadoRepository captura? E o que a tela mostra?",
+    r: "O <code>FeriadoRepository</code> captura <code>IOException</code> (sem internet), <code>HttpException</code> (erro do servidor) e qualquer outra <code>Exception</code>, e devolve <code>ResultadoFeriados.Erro</code>. A tela mostra uma mensagem amigável com \"Tentar novamente\". O app não fecha e a sequência é calculada sem feriados.",
+    a: "data/repository/FeriadoRepository.kt" },
+  { t: "API", q: "Como os dados da API são usados de forma apropriada, além de serem exibidos?",
+    d: "Lembre do recorde que mudou de 1 para 2 quando a internet voltou.",
+    r: "Feriados viram dias neutros na <code>CalculadoraSequencia</code>: não quebram a sequência. Também aparecem destacados no Histórico, como \"próximo feriado\" nos Detalhes e como aviso na tela Hoje.",
+    a: "domain/CalculadoraSequencia.kt" },
+  { t: "API", q: "Por que foi preciso a permissão INTERNET no AndroidManifest?",
+    d: "Quem bloqueia o acesso à rede?",
+    r: "Sem ela o Android bloqueia qualquer acesso à rede do app, e a chamada falharia. O Manifest declara as permissões e componentes do app.",
+    a: "app/src/main/AndroidManifest.xml" },
+  { t: "API", q: "O que é um DTO e por que não usar ele direto na tela?",
+    d: "Compare o formato do JSON com o que o app precisa (LocalDate).",
+    r: "DTO é uma classe só com o formato do JSON (<code>date</code> em texto, <code>name</code>, <code>type</code>). No repositório converto para o que o app usa (<code>LocalDate</code> → nome). Assim, se a API mudar, só o DTO e a conversão mudam.",
+    a: "BrasilApiService.kt · FeriadoRepository.kt" },
+  { t: "API", q: "O que é um sealed interface e por que usou em ResultadoFeriados?",
+    d: "Compare com uma união discriminada. O que o when obriga você a fazer?",
+    r: "Um conjunto fechado de tipos possíveis (aqui, <code>Sucesso</code> ou <code>Erro</code>). Com <code>when</code>, o compilador obriga a tratar todos os casos, então não dá para esquecer o erro.",
+    a: "FeriadoRepository.kt" },
+
+  // ---------- Compartilhar ----------
+  { t: "Compartilhar", q: "Como funciona o botão Compartilhar progresso?",
+    d: "ACTION_SEND, tipo do conteúdo, e quem escolhe o app.",
+    r: "Crio um <code>Intent(Intent.ACTION_SEND)</code> com <code>type = \"text/plain\"</code> e o texto em <code>EXTRA_TEXT</code>. <code>Intent.createChooser</code> mostra a janela do Android com os apps que aceitam texto (WhatsApp, Gmail...).",
+    a: "ui/detalhes/DetalhesScreen.kt" },
+  { t: "Compartilhar", q: "Qual a diferença entre Intent implícito e explícito?",
+    d: "Um diz O QUE fazer; o outro diz QUEM vai fazer.",
+    r: "O implícito diz <b>o que</b> quero fazer (enviar texto) e o Android escolhe quais apps podem. O explícito diz <b>qual</b> tela ou classe abrir. O compartilhar usa um implícito.",
+    a: "DetalhesScreen.kt" },
+
+  // ---------- Regra de negócio ----------
+  { t: "Sequência", q: "Como a sequência atual e o recorde são calculados?",
+    d: "Cada dia é concluído, neutro ou falha. Em que direção cada cálculo anda?",
+    r: "Cada dia é classificado: <b>concluído</b> (valor ≥ meta) soma +1; <b>neutro</b> (não programado, feriado ou hoje ainda não feito) não soma nem quebra; <b>falha</b> quebra. A sequência atual anda de hoje para trás até a primeira falha. O recorde anda do início até hoje guardando a maior sequência.",
+    a: "domain/CalculadoraSequencia.kt" },
+  { t: "Sequência", q: "Se o usuário ainda não marcou o hábito hoje e são 10h, a sequência zera?",
+    d: "O dia já acabou?",
+    r: "Não. \"Hoje\" é neutro enquanto o dia não acabou, então a sequência só quebra se ontem (ou outro dia programado anterior) ficou sem registro.",
+    a: "CalculadoraSequencia.kt" },
+  { t: "Sequência", q: "E num sábado, para um hábito de segunda a sexta?",
+    d: "O hábito estava programado para esse dia?",
+    r: "Neutro: não soma e não quebra, porque o hábito não está programado para sábado (<code>programadoPara(data)</code>).",
+    a: "Habito.kt · CalculadoraSequencia.kt" },
+  { t: "Sequência", q: "Por que a regra da sequência ficou numa classe separada?",
+    d: "Como você testou a regra sem emulador?",
+    r: "É regra de negócio pura, sem Android e sem banco. Fica fácil de entender e de testar com testes unitários JUnit que rodam no computador (<code>CalculadoraSequenciaTest</code>: dias seguidos, dia esquecido, feriado, fim de semana, meta não atingida).",
+    a: "test/CalculadoraSequenciaTest.kt" },
+
+  // ---------- Login ----------
+  { t: "Login", q: "Onde fica a senha do usuário?",
+    d: "Pegadinha. O que exatamente a tabela usuarios guarda?",
+    r: "Em lugar nenhum. Guardo só o <b>hash</b> PBKDF2 e o <b>salt</b>. No login, recalculo o hash da senha digitada com o mesmo salt e comparo com o salvo.",
+    a: "domain/SenhaHasher.kt · data/local/Usuario.kt" },
+  { t: "Login", q: "Por que hash e não criptografia?",
+    d: "Qual dos dois pode ser revertido?",
+    r: "Criptografia pode ser revertida com a chave; hash é de mão única. Nem quem tem acesso ao banco consegue descobrir a senha.",
+    a: "SenhaHasher.kt" },
+  { t: "Login", q: "Para que serve o salt?",
+    d: "Dois usuários com a senha 123456.",
+    r: "Faz senhas iguais terem hashes diferentes e inutiliza tabelas prontas de hashes (rainbow tables). Cada usuário tem 16 bytes aleatórios.",
+    a: "SenhaHasher.kt" },
+  { t: "Login", q: "Por que o cálculo do hash roda em Dispatchers.Default?",
+    d: "Quantas iterações o PBKDF2 faz?",
+    r: "PBKDF2 é propositalmente lento (120 mil iterações) para dificultar força bruta. Rodando fora da thread principal, a tela não trava. É como um <code>await Task.Run(...)</code>.",
+    a: "data/repository/AuthRepository.kt" },
+  { t: "Login", q: "Como o app lembra quem está logado depois de fechar?",
+    d: "Um arquivo chave/valor privado do app.",
+    r: "O <code>SessaoRepository</code> grava o id do usuário em <code>SharedPreferences</code> (parecido com um cookie). Ao abrir o app, lê esse id. \"Sair\" apaga.",
+    a: "data/repository/SessaoRepository.kt" },
+  { t: "Login", q: "Como cada usuário só vê os próprios hábitos?",
+    d: "Uma coluna nova em Habito e uma cláusula WHERE.",
+    r: "<code>Habito.usuarioId</code> é FK para <code>Usuario</code>, e a consulta é <code>WHERE usuarioId = :usuarioId</code> com o id da sessão. A fábrica de ViewModels passa o id do usuário logado.",
+    a: "HabitoDao.kt · AppViewModelProvider.kt" },
+  { t: "Login", q: "Por que a mensagem é \"E-mail ou senha incorretos\" e não \"e-mail não existe\"?",
+    d: "O que um atacante descobriria com a mensagem específica?",
+    r: "Para não revelar quais e-mails têm conta (enumeração de usuários).",
+    a: "AuthRepository.kt" },
+  { t: "Login", q: "Como você impede dois cadastros com o mesmo e-mail?",
+    d: "Índice no banco + uma exceção específica.",
+    r: "Índice único em <code>email</code>. O insert usa <code>ABORT</code>, que lança <code>SQLiteConstraintException</code>; capturo e mostro \"Este e-mail já está cadastrado\". O e-mail é salvo em minúsculas.",
+    a: "Usuario.kt · UsuarioDao.kt · AuthRepository.kt" },
+  { t: "Login", q: "Depois do login, como o app troca da tela de entrar para o app?",
+    d: "Não existe um navigate() depois do login. Quem observa a sessão?",
+    r: "A <code>RaizApp</code> observa o estado da sessão (<code>Carregando</code>, <code>Deslogado</code>, <code>Logado</code>). Quando a sessão muda, ela recompõe sozinha e mostra o app. O <code>key(usuario.id)</code> recria a navegação se outro usuário entrar.",
+    a: "ui/navigation/RaizApp.kt" }
+];
+
+const TEMAS = ["Todos", "Room", "ViewModel", "Compose", "API", "Compartilhar", "Sequência", "Login"];
+const CHAVE = "treino-constancia-v1";
+
+let marcas = {};               // índice da pergunta → "ok" | "warn"
+let tema = "Todos";
+let soRevisar = false;
+let ordem = PERGUNTAS.map((_, i) => i);
+let pos = 0;
+let mostrarDica = false, mostrarResposta = false;
+
+function carregar() {
+  try {
+    const s = JSON.parse(localStorage.getItem(CHAVE) || "{}");
+    if (s && typeof s === "object") { marcas = s.marcas || {}; tema = TEMAS.includes(s.tema) ? s.tema : "Todos"; }
+  } catch (e) { marcas = {}; }
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify({ marcas, tema })); } catch (e) {}
+}
+
+function visiveis() {
+  return ordem.filter(i =>
+    (tema === "Todos" || PERGUNTAS[i].t === tema) &&
+    (!soRevisar || marcas[i] === "warn"));
+}
+
+function renderChips() {
+  const el = document.getElementById("chips");
+  el.innerHTML = "";
+  TEMAS.forEach(nome => {
+    const total = nome === "Todos" ? PERGUNTAS.length : PERGUNTAS.filter(p => p.t === nome).length;
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button";
+    b.setAttribute("aria-pressed", String(nome === tema));
+    b.innerHTML = `${nome}<span class="n">${total}</span>`;
+    b.onclick = () => { tema = nome; pos = 0; fechar(); salvar(); render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderStats() {
+  const total = PERGUNTAS.length;
+  const ok = Object.values(marcas).filter(v => v === "ok").length;
+  const warn = Object.values(marcas).filter(v => v === "warn").length;
+  document.getElementById("barOk").style.width = (ok / total * 100) + "%";
+  document.getElementById("barWarn").style.width = (warn / total * 100) + "%";
+  document.getElementById("stats").innerHTML =
+    `<span><b>${ok}</b> sabia</span><span><b>${warn}</b> para revisar</span><span><b>${total - ok - warn}</b> não vistas</span><span><b>${total}</b> perguntas</span>`;
+}
+
+function renderCard() {
+  const card = document.getElementById("card");
+  const lista = visiveis();
+  if (lista.length === 0) {
+    card.innerHTML = `<div class="empty">${soRevisar ? "Nenhuma pergunta marcada para revisar neste assunto. Bom sinal." : "Nenhuma pergunta neste filtro."}</div>`;
+    return;
+  }
+  if (pos >= lista.length) pos = lista.length - 1;
+  const i = lista[pos], p = PERGUNTAS[i], m = marcas[i];
+  card.innerHTML = `
+    <div class="card-top">
+      <span class="tag">${p.t}</span>
+      ${m === "ok" ? '<span class="status ok">Sabia</span>' : m === "warn" ? '<span class="status warn">Revisar</span>' : ""}
+      <span class="pos">${pos + 1} / ${lista.length}</span>
+    </div>
+    <h2 class="q">${p.q}</h2>
+    ${mostrarDica ? `<div class="panel hint"><h3>Dica</h3><p>${p.d}</p></div>` : ""}
+    ${mostrarResposta ? `<div class="panel answer"><h3>Resposta</h3><p>${p.r}</p><p class="where">Onde mostrar: ${p.a}</p></div>` : ""}
+    <div class="actions">
+      ${!mostrarDica && !mostrarResposta ? '<button class="btn" id="bDica">Ver dica</button>' : ""}
+      ${!mostrarResposta ? '<button class="btn primary" id="bResp">Ver resposta</button>' : `
+        <button class="btn ok" id="bOk">Eu sabia</button>
+        <button class="btn warn" id="bWarn">Preciso revisar</button>`}
+    </div>`;
+  const on = (id, fn) => { const b = document.getElementById(id); if (b) b.onclick = fn; };
+  on("bDica", () => { mostrarDica = true; renderCard(); });
+  on("bResp", () => { mostrarResposta = true; renderCard(); });
+  on("bOk", () => marcar("ok"));
+  on("bWarn", () => marcar("warn"));
+}
+
+function marcar(v) {
+  const lista = visiveis();
+  if (!lista.length) return;
+  marcas[lista[pos]] = v; salvar();
+  // No modo "só revisar", ao marcar "sabia" a pergunta sai da lista; não avança para não pular a próxima.
+  if (!(soRevisar && v === "ok")) pos = Math.min(pos + 1, visiveis().length - 1);
+  fechar(); render();
+}
+function fechar() { mostrarDica = false; mostrarResposta = false; }
+function mover(d) {
+  const n = visiveis().length; if (!n) return;
+  pos = (pos + d + n) % n; fechar(); renderCard();
+}
+function render() { renderChips(); renderStats(); renderCard(); }
+
+document.getElementById("prev").onclick = () => mover(-1);
+document.getElementById("next").onclick = () => mover(1);
+document.getElementById("shuffle").onclick = () => {
+  for (let k = ordem.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [ordem[k], ordem[j]] = [ordem[j], ordem[k]]; }
+  pos = 0; fechar(); renderCard();
+};
+let confirmandoZerar = false;
+const bReset = document.getElementById("reset");
+bReset.onclick = () => {
+  if (!confirmandoZerar) { confirmandoZerar = true; bReset.textContent = "Confirmar: zerar tudo"; setTimeout(() => { confirmandoZerar = false; bReset.textContent = "Zerar progresso"; }, 3000); return; }
+  confirmandoZerar = false; bReset.textContent = "Zerar progresso";
+  marcas = {}; pos = 0; fechar(); salvar(); render();
+};
+document.getElementById("soRevisar").onchange = e => { soRevisar = e.target.checked; pos = 0; fechar(); render(); };
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, textarea")) return;
+  if (e.key === "ArrowRight") mover(1);
+  else if (e.key === "ArrowLeft") mover(-1);
+  else if (e.key === " ") { e.preventDefault(); mostrarResposta = true; renderCard(); }
+  else if (e.key.toLowerCase() === "d") { mostrarDica = true; renderCard(); }
+  else if (mostrarResposta && e.key.toLowerCase() === "s") marcar("ok");
+  else if (mostrarResposta && e.key.toLowerCase() === "r") marcar("warn");
+});
+
+carregar();
+render();
+</script>

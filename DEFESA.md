@@ -5,6 +5,9 @@
 > **A tela só desenha estado e avisa eventos; o ViewModel guarda o estado e decide; o Repository busca os dados; o DAO (Room) e o Retrofit falam com o banco e a internet.**
 
 ```
+ RaizApp ── sem login ──▶ AuthScreen (entrar / criar conta)
+         └─ com login ──▶ ConstanciaApp (Hoje · Hábitos · Detalhes · Histórico)
+
  Tela (@Composable) ──evento──▶ ViewModel ──▶ Repository ──┬──▶ DAO (Room) ──▶ SQLite
         ▲                           │                       └──▶ Retrofit ──▶ BrasilAPI
         └──── estado (StateFlow) ◀──┘◀───────── Flow ◀──────────────┘
@@ -18,9 +21,10 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 
 | Requisito | Pontos | Onde mostrar |
 |---|---|---|
-| Kotlin + Compose | — | qualquer `*Screen.kt`; `MainActivity.kt` só chama `ConstanciaApp()` |
+| Kotlin + Compose | — | qualquer `*Screen.kt`; `MainActivity.kt` só chama `RaizApp()` |
 | CRUD em 2 tabelas | 1,5 | **Habito**: `HabitoDao.kt` + telas Hábitos/Formulário/Detalhes. **RegistroDiario**: `RegistroDiarioDao.kt` + telas Hoje/Histórico |
-| Room | 1,0 | `Habito.kt`, `RegistroDiario.kt` (FK + CASCADE + índice único), `Converters.kt`, `ConstanciaDatabase.kt` |
+| Room | 1,0 | **3 tabelas**: `Usuario.kt` (e-mail único), `Habito.kt` (FK → usuário), `RegistroDiario.kt` (FK → hábito, índice único), `Converters.kt`, `ConstanciaDatabase.kt` |
+| Login (extra) | — | `AuthScreen.kt`, `AuthRepository.kt`, `SenhaHasher.kt`, `SessaoRepository.kt`, `RaizApp.kt` |
 | API | 1,0 | `BrasilApiService.kt`, `FeriadoRepository.kt` (erros), `CalculadoraSequencia.kt` (uso dos dados) |
 | Compartilhar | 0,5 | `DetalhesScreen.kt` → botão "Compartilhar progresso" (`Intent.ACTION_SEND`) |
 | Interface | 1,0 | estados carregando/vazio/erro em todas as telas; estado no ViewModel (rotação) |
@@ -36,8 +40,9 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 
 ---
 
-## 3. Roteiro de demonstração (≈ 3 minutos)
+## 3. Roteiro de demonstração (≈ 4 minutos)
 
+0. **Tela inicial**: "Primeira vez aqui? Criar conta" → tente senhas diferentes (erro) → cadastre-se → entra direto ("Olá, …!").
 1. **Hábitos → +**: tente salvar vazio (mostra a validação). Crie "Beber água" com meta 8 e "Ler" só de segunda a sexta.
 2. **Gire a tela** com o formulário preenchido → nada se perde.
 3. **Hoje**: toque + três vezes em Beber água (3 de 8), marque Ler.
@@ -46,6 +51,7 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 6. **Ver histórico** → "Registrar dia" em 1º/11 e 3/11 → **Finados (2/11) aparece destacado**; edite um valor; exclua um registro.
 7. **Modo avião** → fechar e abrir o app → Detalhes mostra o erro amigável → tirar modo avião → **Tentar novamente** → o recorde muda porque o feriado passa a contar como descanso.
 8. Excluir o hábito → o histórico some junto (CASCADE).
+9. **Sair** (ícone no topo de Hábitos) → crie outro usuário → a lista dele está vazia → saia e entre com o primeiro (teste também a senha errada) → os hábitos dele voltam. Feche e reabra o app: continua logado.
 
 > Dica: comece a demonstração com o app limpo (Configurações do emulador → Apps → Constância → Armazenamento → Limpar dados).
 
@@ -54,23 +60,30 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 ## 4. Resumo de cada arquivo
 
 ### `data/local` — banco (Room)
-- **`Habito.kt`**: `@Entity` da tabela `habitos`. `meta: Int?` é nulo para hábitos "feito/não feito". `alvoDiario` = `meta ?: 1`. `programadoPara(data)` diz se o hábito vale naquele dia da semana.
+- **`Usuario.kt`**: tabela `usuarios` com nome, e-mail (índice único) e **só o hash + salt da senha**, nunca a senha.
+- **`UsuarioDao.kt`**: `inserir` (com `ABORT` se o e-mail já existe), `buscarPorEmail`, `observarPorId`.
+- **`Habito.kt`**: `@Entity` da tabela `habitos`, com `usuarioId` (FK → `usuarios.id`, CASCADE). `meta: Int?` é nulo para hábitos "feito/não feito". `alvoDiario` = `meta ?: 1`. `programadoPara(data)` diz se o hábito vale naquele dia da semana.
 - **`RegistroDiario.kt`**: tabela `registros_diarios`. `@ForeignKey(onDelete = CASCADE)` para `habitos.id` e `@Index(habitoId, data, unique = true)` (no máximo um registro por dia).
 - **`Converters.kt`**: `LocalDate` ↔ `Long`, `LocalTime` ↔ `String`, `Set<DayOfWeek>` ↔ `"1,3,5"`. O SQLite só entende tipos simples.
 - **`HabitoDao.kt` / `RegistroDiarioDao.kt`**: interfaces com `@Insert`, `@Query`, `@Update`, `@Delete`. O KSP gera a implementação na compilação. Leituras retornam `Flow` (atualizam sozinhas); escritas são `suspend`.
-- **`ConstanciaDatabase.kt`**: `@Database` com as duas entidades, versão 1, singleton (`companion object` + `synchronized`).
+- **`ConstanciaDatabase.kt`**: `@Database` com as três entidades, versão 2 (subiu ao entrar `usuarios`), singleton (`companion object` + `synchronized`).
 
 ### `data/remote` e `data/repository`
 - **`BrasilApiService.kt`**: `FeriadoDto` (formato do JSON) + interface Retrofit `@GET("api/feriados/v1/{ano}")`.
 - **`FeriadoRepository.kt`**: chama a API, guarda cache em memória por ano, trata `IOException` (sem internet), `HttpException` (erro do servidor) e qualquer outra `Exception`. Devolve `ResultadoFeriados.Sucesso` ou `.Erro` (`sealed interface`).
 - **`HabitoRepository.kt` / `RegistroRepository.kt`**: repassam para os DAOs. O de registros tem `ajustarValor()` e `alternarFeito()`, que decidem entre criar, atualizar ou apagar o registro do dia.
+- **`SessaoRepository.kt`**: guarda o id do usuário logado em `SharedPreferences` (sobrevive a fechar o app) e expõe um `StateFlow`.
+- **`AuthRepository.kt`**: `cadastrar` (gera salt + hash, insere, inicia sessão), `entrar` (busca por e-mail, confere hash), `sair`, e `usuarioLogado` (Flow com o usuário atual).
 - **`AppContainer.kt`**: cria banco, Retrofit e repositórios uma vez só (injeção de dependência manual, `by lazy`).
 - **`ConstanciaApplication.kt`**: cria o `AppContainer` quando o app abre (registrada no `AndroidManifest.xml`).
 
 ### `domain`
+- **`SenhaHasher.kt`**: PBKDF2-HMAC-SHA256, 120 000 iterações, salt aleatório de 16 bytes. Testado em `SenhaHasherTest.kt`.
 - **`CalculadoraSequencia.kt`**: regra de negócio pura. Cada dia é **concluído** (+1), **neutro** (não programado, feriado ou hoje ainda não feito) ou **falha** (quebra). Sequência atual = de hoje para trás até a primeira falha; recorde = maior sequência do início até hoje. Testada em `CalculadoraSequenciaTest.kt` (6 testes).
 
 ### `ui`
+- **`navigation/RaizApp.kt`**: decide entre carregando / tela de login / app, observando a sessão. Não "navega" para o app: quando a sessão muda, recompõe sozinho.
+- **`auth/`**: `AuthViewModel` (formulário de entrar/criar conta, validação, `EstadoSessao`) e `AuthScreen`.
 - **`AppViewModelProvider.kt`**: fábrica que cria cada ViewModel com seus repositórios (e o `SavedStateHandle` com o id da rota).
 - **`navigation/ConstanciaApp.kt`**: `NavHost` com as rotas `hoje`, `habitos`, `habito_form?id={id}`, `detalhes/{habitoId}`, `historico/{habitoId}` e a barra inferior.
 - **`habitos/`**: lista (`HabitosViewModel` com `StateFlow`) e formulário (`HabitoFormViewModel` com `mutableStateOf`, validação, mesmo formulário para criar e editar).
@@ -140,6 +153,16 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 24. **Por que a permissão `INTERNET`?** Sem ela o Android bloqueia qualquer acesso à rede do app.
 25. **O que é um DTO?** Uma classe só com o formato do JSON. Converto para o que o app usa (`LocalDate` → nome) no repositório.
 
+### Login / cadastro
+31. **Onde fica a senha?** Em lugar nenhum. Guardo só o **hash** PBKDF2 e o **salt**. No login recalculo o hash da senha digitada com o mesmo salt e comparo.
+32. **Por que hash e não criptografia?** Criptografia pode ser revertida com a chave; hash é de mão única. Nem eu (dono do banco) consigo descobrir a senha.
+33. **Para que serve o salt?** Faz senhas iguais terem hashes diferentes e inutiliza tabelas prontas de hashes (rainbow tables).
+34. **Por que o hash roda em `Dispatchers.Default`?** PBKDF2 é propositalmente lento (120 mil iterações). Fora da thread principal a tela não trava.
+35. **Como o app lembra quem está logado?** `SessaoRepository` grava o id do usuário em `SharedPreferences`. Ao abrir o app, lê esse id. "Sair" apaga.
+36. **Como cada usuário só vê os próprios hábitos?** `Habito.usuarioId` é FK para `Usuario`, e a consulta é `WHERE usuarioId = :usuarioId` com o id da sessão.
+37. **Por que "E-mail ou senha incorretos" e não "e-mail não existe"?** Para não revelar quais e-mails têm conta (enumeração de usuários).
+38. **Como você impede dois cadastros com o mesmo e-mail?** Índice único em `email`; o insert com `ABORT` lança `SQLiteConstraintException`, que viro em mensagem amigável. O e-mail é salvo em minúsculas.
+
 ### Compartilhamento
 26. **Como funciona o compartilhar?** `Intent(ACTION_SEND)` com `type = "text/plain"` e `EXTRA_TEXT`; `createChooser` mostra a lista de apps que aceitam texto.
 27. **Intent implícito × explícito?** Implícito diz *o que* fazer (enviar texto) e o Android escolhe o app; explícito diz *qual* tela/classe abrir.
@@ -156,5 +179,6 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 - **Cache de feriados só em memória**: ao reabrir o app sem internet, os feriados não são considerados até a conexão voltar. Melhoria: salvar no Room.
 - **"Hoje" é fixado quando a tela abre**: se o app ficar aberto virando a meia-noite, a tela Hoje só atualiza ao ser reaberta.
 - **Morte de processo**: rotação está coberta (ViewModel); se o Android matar o app em segundo plano, um formulário em edição se perde. Melhoria: guardar no `SavedStateHandle`.
+- **Login é local**: as contas existem só neste aparelho; não há "esqueci minha senha" nem troca de senha. Melhoria: Firebase Authentication ou uma API própria.
 - **Injeção de dependência manual**: num projeto maior eu usaria Hilt.
 - **Lembretes (WorkManager)** não foram feitos — eram extras.

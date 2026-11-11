@@ -13,14 +13,15 @@ import androidx.room.TypeConverters
  * - exportSchema = false: não gera o JSON do esquema (não precisamos para o trabalho).
  */
 @Database(
-    entities = [Habito::class, RegistroDiario::class],
-    version = 1,
+    entities = [Usuario::class, Habito::class, RegistroDiario::class],
+    version = 2,   // subiu de 1 → 2 quando entrou a tabela usuarios (fallbackToDestructiveMigration recria o banco)
     exportSchema = false
 )
 @TypeConverters(Converters::class)   // registra os conversores de LocalDate, Set<DayOfWeek>...
 abstract class ConstanciaDatabase : RoomDatabase() {   // `:` = herança (igual ao C#)
 
     // O Room gera a implementação destes métodos.
+    abstract fun usuarioDao(): UsuarioDao
     abstract fun habitoDao(): HabitoDao
     abstract fun registroDiarioDao(): RegistroDiarioDao
 

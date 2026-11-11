@@ -51,7 +51,7 @@ private val ABAS = listOf(
 )
 
 @Composable
-fun ConstanciaApp() {
+fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
     // NavController ≈ NavigationManager do Blazor: guarda a pilha de telas e navega.
     // `remember` mantém o mesmo objeto entre recomposições.
     val navController = rememberNavController()
@@ -91,11 +91,15 @@ fun ConstanciaApp() {
             modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
         ) {
             composable(Rotas.HOJE) {
-                HojeScreen(onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) })
+                HojeScreen(
+                    nomeUsuario = nomeUsuario,
+                    onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) }
+                )
             }
 
             composable(Rotas.HABITOS) {
                 HabitosScreen(
+                    onSair = onSair,
                     onNovo = { navController.navigate(Rotas.habitoForm()) },
                     onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) },
                     onEditar = { id -> navController.navigate(Rotas.habitoForm(id)) }

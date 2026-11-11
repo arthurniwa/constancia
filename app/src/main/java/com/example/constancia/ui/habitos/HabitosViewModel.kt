@@ -23,7 +23,10 @@ data class HabitosUiState(
  * (a Activity é destruída e recriada ao girar; o ViewModel não).
  * ≈ o @code de um componente Blazor, mas separado da UI e com vida mais longa.
  */
-class HabitosViewModel(private val repository: HabitoRepository) : ViewModel() {
+class HabitosViewModel(
+    private val repository: HabitoRepository,
+    usuarioId: Long   // usuário logado: só os hábitos dele aparecem
+) : ViewModel() {
 
     /**
      * READ do CRUD: transforma o Flow do Room em StateFlow (um Flow que sempre tem um "valor atual",
@@ -32,7 +35,7 @@ class HabitosViewModel(private val repository: HabitoRepository) : ViewModel() {
      * - WhileSubscribed(5000): para de escutar o banco 5s depois que a tela some
      *   (os 5s evitam recomeçar a consulta durante uma rotação).
      */
-    val uiState: StateFlow<HabitosUiState> = repository.observarTodos()
+    val uiState: StateFlow<HabitosUiState> = repository.observarDoUsuario(usuarioId)
         .map { lista -> HabitosUiState(carregando = false, habitos = lista) }
         .stateIn(
             scope = viewModelScope,

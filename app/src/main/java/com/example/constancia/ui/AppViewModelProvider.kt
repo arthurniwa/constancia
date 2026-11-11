@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.constancia.ConstanciaApplication
+import com.example.constancia.ui.auth.AuthViewModel
 import com.example.constancia.ui.detalhes.DetalhesViewModel
 import com.example.constancia.ui.habitos.HabitoFormViewModel
 import com.example.constancia.ui.habitos.HabitosViewModel
@@ -19,18 +20,21 @@ import com.example.constancia.ui.hoje.HojeViewModel
  */
 object AppViewModelProvider {   // `object` = singleton (≈ classe static)
     val Factory = viewModelFactory {
-        initializer { HabitosViewModel(app().container.habitoRepository) }
+        initializer { AuthViewModel(app().container.authRepository) }
+        initializer { HabitosViewModel(app().container.habitoRepository, usuarioLogado()) }
         initializer {
             HabitoFormViewModel(
                 savedStateHandle = createSavedStateHandle(),   // traz o {id} da rota
-                repository = app().container.habitoRepository
+                repository = app().container.habitoRepository,
+                usuarioId = usuarioLogado()
             )
         }
         initializer {
             HojeViewModel(
                 app().container.habitoRepository,
                 app().container.registroRepository,
-                app().container.feriadoRepository
+                app().container.feriadoRepository,
+                usuarioLogado()
             )
         }
         initializer {
@@ -51,6 +55,13 @@ object AppViewModelProvider {   // `object` = singleton (≈ classe static)
         }
     }
 }
+
+/**
+ * Id do usuário logado. As telas de hábitos só existem depois do login
+ * (ver RaizApp), então aqui ele nunca é null — `checkNotNull` deixa isso explícito.
+ */
+private fun CreationExtras.usuarioLogado(): Long =
+    checkNotNull(app().container.sessaoRepository.usuarioId.value) { "Nenhum usuário logado" }
 
 /** Pega a nossa classe Application de dentro do contexto de criação do ViewModel. */
 private fun CreationExtras.app(): ConstanciaApplication =

@@ -19,7 +19,7 @@ class CalculadoraSequenciaTest {
     private fun dia(d: Int) = LocalDate.of(2026, 11, d)
 
     private val todosOsDias = Habito(
-        id = 1, nome = "Ler", icone = "📚", cor = 0,
+        id = 1, usuarioId = 1, nome = "Ler", icone = "📚", cor = 0,
         diasDaSemana = DayOfWeek.entries.toSet(),
         dataCriacao = dia(1)
     )

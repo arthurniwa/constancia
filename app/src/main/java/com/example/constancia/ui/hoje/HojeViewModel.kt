@@ -35,7 +35,8 @@ data class HojeUiState(
 class HojeViewModel(
     private val habitoRepository: HabitoRepository,
     private val registroRepository: RegistroRepository,
-    feriadoRepository: FeriadoRepository
+    feriadoRepository: FeriadoRepository,
+    usuarioId: Long
 ) : ViewModel() {
 
     private val hoje: LocalDate = LocalDate.now()
@@ -55,7 +56,7 @@ class HojeViewModel(
      * recalcula a lista. ≈ CombineLatest do Rx.
      */
     val uiState: StateFlow<HojeUiState> = combine(
-        habitoRepository.observarTodos(),
+        habitoRepository.observarDoUsuario(usuarioId),
         registroRepository.observarPorData(hoje),
         feriadoHoje
     ) { habitos, registros, feriado ->

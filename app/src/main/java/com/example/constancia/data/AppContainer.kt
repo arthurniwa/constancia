@@ -3,9 +3,11 @@ package com.example.constancia.data
 import android.content.Context
 import com.example.constancia.data.local.ConstanciaDatabase
 import com.example.constancia.data.remote.BrasilApiService
+import com.example.constancia.data.repository.AuthRepository
 import com.example.constancia.data.repository.FeriadoRepository
 import com.example.constancia.data.repository.HabitoRepository
 import com.example.constancia.data.repository.RegistroRepository
+import com.example.constancia.data.repository.SessaoRepository
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -29,6 +31,8 @@ class AppContainer(context: Context) {
             .create(BrasilApiService::class.java)                 // gera a implementação da interface
     }
 
+    val sessaoRepository by lazy { SessaoRepository(context) }
+    val authRepository by lazy { AuthRepository(database.usuarioDao(), sessaoRepository) }
     val habitoRepository by lazy { HabitoRepository(database.habitoDao()) }
     val registroRepository by lazy { RegistroRepository(database.registroDiarioDao()) }
     val feriadoRepository by lazy { FeriadoRepository(brasilApi) }

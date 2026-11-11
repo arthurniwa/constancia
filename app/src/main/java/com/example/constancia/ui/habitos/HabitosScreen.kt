@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -35,6 +36,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +60,7 @@ import com.example.constancia.ui.util.resumo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitosScreen(
+    onSair: () -> Unit,
     onNovo: () -> Unit,
     onAbrir: (Long) -> Unit,
     onEditar: (Long) -> Unit,
@@ -64,9 +69,20 @@ fun HabitosScreen(
     // collectAsState: transforma o StateFlow em estado do Compose (a tela redesenha quando muda).
     val uiState by viewModel.uiState.collectAsState()
     val habitoParaExcluir by viewModel.habitoParaExcluir.collectAsState()
+    // rememberSaveable: estado simples da própria tela que sobrevive à rotação (Boolean é "salvável").
+    var confirmandoSaida by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(   // Scaffold = "esqueleto" Material: barra de topo, FAB, conteúdo — sem sobreposição.
-        topBar = { TopAppBar(title = { Text("Meus hábitos") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Meus hábitos") },
+                actions = {
+                    IconButton(onClick = { confirmandoSaida = true }) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair da conta")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onNovo) {
                 Icon(Icons.Default.Add, contentDescription = "Novo hábito")
@@ -99,6 +115,16 @@ fun HabitosScreen(
                 }
             }
         }
+    }
+
+    if (confirmandoSaida) {
+        AlertDialog(
+            onDismissRequest = { confirmandoSaida = false },
+            title = { Text("Sair da conta?") },
+            text = { Text("Seus hábitos continuam salvos. Basta entrar de novo.") },
+            confirmButton = { TextButton(onClick = { confirmandoSaida = false; onSair() }) { Text("Sair") } },
+            dismissButton = { TextButton(onClick = { confirmandoSaida = false }) { Text("Cancelar") } }
+        )
     }
 
     // Diálogo de confirmação: aparece sempre que houver um hábito marcado para exclusão.

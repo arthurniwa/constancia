@@ -25,8 +25,9 @@ interface HabitoDao {
     // Retorna Flow (≈ IObservable / IAsyncEnumerable que nunca termina):
     // sempre que a tabela mudar, o Room emite a lista nova e a tela se atualiza sozinha.
     // Por isso não é `suspend`: o Flow já é assíncrono.
-    @Query("SELECT * FROM habitos ORDER BY nome COLLATE NOCASE")
-    fun observarTodos(): Flow<List<Habito>>
+    // Só os hábitos do usuário logado.
+    @Query("SELECT * FROM habitos WHERE usuarioId = :usuarioId ORDER BY nome COLLATE NOCASE")
+    fun observarDoUsuario(usuarioId: Long): Flow<List<Habito>>
 
     // `:id` liga o parâmetro do método ao SQL (≈ @id no Dapper/SqlCommand).
     // `Habito?` porque o id pode não existir (ex.: acabou de ser excluído).

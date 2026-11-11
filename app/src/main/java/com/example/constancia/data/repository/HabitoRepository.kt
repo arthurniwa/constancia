@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
  */
 class HabitoRepository(private val habitoDao: HabitoDao) {
 
-    fun observarTodos(): Flow<List<Habito>> = habitoDao.observarTodos()
+    fun observarDoUsuario(usuarioId: Long): Flow<List<Habito>> = habitoDao.observarDoUsuario(usuarioId)
 
     fun observarPorId(id: Long): Flow<Habito?> = habitoDao.observarPorId(id)
 

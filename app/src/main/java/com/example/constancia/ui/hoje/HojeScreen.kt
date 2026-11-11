@@ -42,6 +42,7 @@ import com.example.constancia.ui.util.formatoLongo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HojeScreen(
+    nomeUsuario: String,
     onAbrir: (Long) -> Unit,
     viewModel: HojeViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
@@ -51,7 +52,8 @@ fun HojeScreen(
         topBar = {
             TopAppBar(title = {
                 Column {
-                    Text("Hoje")
+                    // substringBefore(" "): só o primeiro nome ("Arthur Niwa" → "Arthur").
+                    Text("Olá, ${nomeUsuario.substringBefore(" ")}!")
                     Text(estado.data.formatoLongo(), style = MaterialTheme.typography.bodyMedium)
                 }
             })

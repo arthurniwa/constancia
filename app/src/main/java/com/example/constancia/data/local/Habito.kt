@@ -1,6 +1,8 @@
 package com.example.constancia.data.local
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -12,12 +14,28 @@ import java.time.LocalTime
  * `data class` ≈ `record` do C#: o compilador gera equals/hashCode/toString/copy.
  * `@Entity` ≈ uma classe mapeada no DbContext do Entity Framework (vira tabela).
  */
-@Entity(tableName = "habitos")
+@Entity(
+    tableName = "habitos",
+    // Cada hábito pertence a um usuário (1 Usuario → N Habitos).
+    // CASCADE: se o usuário for apagado, os hábitos dele (e, em cadeia, os registros) somem junto.
+    foreignKeys = [
+        ForeignKey(
+            entity = Usuario::class,
+            parentColumns = ["id"],
+            childColumns = ["usuarioId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("usuarioId")]   // acelera "SELECT ... WHERE usuarioId = ?"
+)
 data class Habito(
     // `val` = propriedade somente leitura (≈ `init` / readonly). `var` seria mutável.
     // autoGenerate = true ≈ IDENTITY no SQL Server. O valor 0 significa "ainda não salvo".
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+
+    // Dono do hábito (chave estrangeira para usuarios.id).
+    val usuarioId: Long,
 
     val nome: String,
 

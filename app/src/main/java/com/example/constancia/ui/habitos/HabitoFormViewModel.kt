@@ -18,6 +18,7 @@ import java.time.LocalTime
 /** Estado do formulário. A meta fica como texto porque o campo da tela é texto. */
 data class HabitoFormUiState(
     val id: Long = 0,
+    val usuarioId: Long = 0,
     val nome: String = "",
     val icone: String = OPCOES_ICONE.first(),
     val cor: Int = OPCOES_COR.first(),
@@ -39,7 +40,8 @@ data class HabitoFormUiState(
  */
 class HabitoFormViewModel(
     savedStateHandle: SavedStateHandle,
-    private val repository: HabitoRepository
+    private val repository: HabitoRepository,
+    private val usuarioId: Long   // dono dos hábitos novos
 ) : ViewModel() {
 
     private val habitoId: Long = savedStateHandle["id"] ?: 0L
@@ -50,7 +52,7 @@ class HabitoFormViewModel(
      * `private set`: a tela lê, mas só o ViewModel altera.
      * Como mora no ViewModel, o que o usuário digitou sobrevive à rotação.
      */
-    var uiState by mutableStateOf(HabitoFormUiState())
+    var uiState by mutableStateOf(HabitoFormUiState(usuarioId = usuarioId))
         private set
 
     // `init` ≈ corpo do construtor. Roda uma vez só (não roda de novo ao girar a tela).
@@ -59,7 +61,7 @@ class HabitoFormViewModel(
             uiState = uiState.copy(carregando = true)
             viewModelScope.launch {
                 val habito = repository.buscarPorId(habitoId)
-                uiState = if (habito != null) habito.paraFormState() else HabitoFormUiState()
+                uiState = habito?.paraFormState() ?: HabitoFormUiState(usuarioId = usuarioId)
             }
         }
     }
@@ -112,6 +114,7 @@ class HabitoFormViewModel(
 // Funções de extensão privadas para converter entre entidade e estado da tela (≈ um "mapper").
 private fun Habito.paraFormState() = HabitoFormUiState(
     id = id,
+    usuarioId = usuarioId,
     nome = nome,
     icone = icone,
     cor = cor,
@@ -123,6 +126,7 @@ private fun Habito.paraFormState() = HabitoFormUiState(
 
 private fun HabitoFormUiState.paraHabito() = Habito(
     id = id,
+    usuarioId = usuarioId,
     nome = nome.trim(),
     icone = icone,
     cor = cor,

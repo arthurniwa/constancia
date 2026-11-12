@@ -73,7 +73,7 @@ fun DetalhesScreen(
     val estado by viewModel.uiState.collectAsState()
     val confirmandoExclusao by viewModel.confirmandoExclusao.collectAsState()
     val scope = rememberCoroutineScope()
-    // Context = "acesso ao sistema Android" (abrir outras telas/apps, recursos...).
+    // Context: necessário para abrir outros apps.
     val context = LocalContext.current
     val habito = estado.habito
 
@@ -82,7 +82,7 @@ fun DetalhesScreen(
             TopAppBar(
                 title = { Text(habito?.nome ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = onVoltar) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
-                actions = {   // ícones no canto direito da barra
+                actions = {
                     if (habito != null) {
                         IconButton(onClick = { onEditar(habito.id) }) { Icon(Icons.Default.Edit, "Editar hábito") }
                         IconButton(onClick = viewModel::pedirExclusao) { Icon(Icons.Default.Delete, "Excluir hábito") }
@@ -103,7 +103,7 @@ fun DetalhesScreen(
                 val cor = Color(habito.cor)
                 val hoje = LocalDate.now()
 
-                // Cabeçalho: anel com o progresso de hoje + dias e meta.
+                // Cabeçalho: anel com o progresso de hoje.
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         AnelProgresso(
@@ -125,7 +125,7 @@ fun DetalhesScreen(
                     }
                 }
 
-                // Três métricas lado a lado (weight(1f) divide a largura em partes iguais).
+                // Três métricas com a mesma largura.
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CartaoMetrica("Sequência", "${e.sequenciaAtual}", dias(e.sequenciaAtual), Laranja, Modifier.weight(1f))
                     CartaoMetrica("Recorde", "${e.recorde}", dias(e.recorde), Ambar, Modifier.weight(1f))
@@ -152,12 +152,11 @@ fun DetalhesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // ---------- Dados da BrasilAPI (requisito 4): os 3 estados possíveis ----------
+                // ---------- Feriados da BrasilAPI (requisito 4): carregando / erro / sucesso ----------
                 when {
                     estado.carregandoFeriados -> CarregandoFeriados()
                     estado.erroFeriados != null -> ErroFeriados(estado.erroFeriados!!, viewModel::carregarFeriados)
-                    // `!!` = "garanto que não é null" (lança exceção se for). Aqui é seguro: checamos na linha acima.
-                    else -> estado.proximoFeriado?.let { (data, nome) ->   // desestrutura o Pair
+                    else -> estado.proximoFeriado?.let { (data, nome) ->
                         CartaoTexto("🎉", "Próximo feriado (descanso automático)", "$nome · ${data.formatoCurto()}")
                     }
                 }
@@ -165,13 +164,12 @@ fun DetalhesScreen(
                 // ---------- Compartilhamento com outro app (requisito 5) ----------
                 Button(
                     onClick = {
-                        // Intent = "mensagem" pedindo ao Android que alguém execute uma ação.
-                        // ACTION_SEND = "enviar dados"; o Android lista os apps capazes (WhatsApp, Gmail...).
-                        val enviar = Intent(Intent.ACTION_SEND).apply {   // `apply` configura o objeto e o devolve
-                            type = "text/plain"                           // tipo do conteúdo (MIME)
+                        // Intent ACTION_SEND (≈ pedido ao sistema): enviar texto a outro app.
+                        val enviar = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, textoCompartilhamento(habito, e))
                         }
-                        // createChooser força a janela "Compartilhar com..." (sempre deixa o usuário escolher).
+                        // createChooser: o usuário escolhe o app (WhatsApp, Gmail...).
                         context.startActivity(Intent.createChooser(enviar, "Compartilhar progresso"))
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -199,7 +197,7 @@ fun DetalhesScreen(
                 TextButton(onClick = {
                     scope.launch {
                         viewModel.excluir()
-                        onVoltar()   // só volta depois de excluir
+                        onVoltar()
                     }
                 }) { Text("Excluir") }
             },

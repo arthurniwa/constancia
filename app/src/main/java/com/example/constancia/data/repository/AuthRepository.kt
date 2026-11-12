@@ -18,17 +18,13 @@ sealed interface ResultadoAuth {
     data class Erro(val mensagem: String) : ResultadoAuth
 }
 
-/** Cadastro, login e logout. Junta o banco (UsuarioDao) com a sessão (SessaoRepository). */
+/** Cadastro, login e logout: junta o banco (UsuarioDao) com a sessão. */
 class AuthRepository(
     private val usuarioDao: UsuarioDao,
     private val sessao: SessaoRepository
 ) {
 
-    /**
-     * Usuário logado agora (ou null).
-     * flatMapLatest: quando o id da sessão muda, troca para o Flow do novo usuário (≈ Switch do Rx).
-     * Se a sessão aponta para um usuário que não existe mais (ex.: banco recriado), encerra a sessão.
-     */
+    /** Usuário logado agora (ou null). Se ele não existe mais no banco, encerra a sessão. */
     @OptIn(ExperimentalCoroutinesApi::class)
     val usuarioLogado: Flow<Usuario?> = sessao.usuarioId.flatMapLatest { id ->
         if (id == null) flowOf(null)
@@ -40,8 +36,7 @@ class AuthRepository(
 
     suspend fun cadastrar(nome: String, email: String, senha: String): ResultadoAuth {
         val emailNormalizado = email.trim().lowercase()
-        // PBKDF2 é propositalmente lento: roda numa thread de cálculo para não travar a tela.
-        // withContext(Dispatchers.Default) ≈ await Task.Run(...) do C#.
+        // PBKDF2 é lento de propósito: roda fora da thread da tela.
         val usuario = withContext(Dispatchers.Default) {
             val salt = SenhaHasher.gerarSalt()
             Usuario(
@@ -70,7 +65,7 @@ class AuthRepository(
                 Base64.getDecoder().decode(usuario.senhaHash)
             )
         }
-        // Mesma mensagem para "e-mail não existe" e "senha errada": não revela quais e-mails têm conta.
+        // Mesma mensagem para e-mail inexistente e senha errada (não revela quem tem conta).
         if (usuario == null || !senhaOk) return ResultadoAuth.Erro("E-mail ou senha incorretos.")
         sessao.iniciar(usuario.id)
         return ResultadoAuth.Sucesso(usuario)

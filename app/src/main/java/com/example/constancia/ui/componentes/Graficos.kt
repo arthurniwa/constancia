@@ -47,10 +47,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 
 /**
- * Anel de progresso desenhado à mão com Canvas (≈ <canvas> do HTML / SVG com stroke-dasharray).
- * - arco = 360 → anel fechado começando no topo; arco = 270 → "medidor" aberto embaixo.
- * - animateFloatAsState: quando o progresso muda, o anel "enche" suavemente em 0,6 s.
- * - `conteudo` é desenhado no centro (emoji, número...).
+ * Anel de progresso desenhado com Canvas + drawArc (≈ <canvas> do HTML).
+ * animateFloatAsState faz o anel encher suavemente. arco 270 = medidor aberto.
  */
 @Composable
 fun AnelProgresso(
@@ -61,14 +59,14 @@ fun AnelProgresso(
     arco: Float = 360f,
     conteudo: @Composable BoxScope.() -> Unit = {}
 ) {
-    // `by` + animateFloatAsState: lê sempre o valor intermediário da animação.
+    // Valor animado (0,6 s) até o progresso novo.
     val animado by animateFloatAsState(progresso.coerceIn(0f, 1f), tween(600), label = "anel")
     Box(modifier, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.matchParentSize()) {   // `this` aqui é um DrawScope (área de desenho)
+        Canvas(Modifier.matchParentSize()) {
             val traco = espessura.toPx()
-            val lado = size.minDimension - traco                     // desconta a espessura para não cortar a borda
+            val lado = size.minDimension - traco                     // não corta a borda
             val canto = Offset((size.width - lado) / 2, (size.height - lado) / 2)
-            // Ângulos em graus: 0° = 3 horas, sentido horário. -90° = topo.
+            // Ângulos: 0° = 3 horas; -90° = topo.
             val inicio = if (arco >= 360f) -90f else 90f + (360f - arco) / 2
             val estilo = Stroke(width = traco, cap = StrokeCap.Round)
             drawArc(Trilha, inicio, arco, useCenter = false, topLeft = canto, size = Size(lado, lado), style = estilo)
@@ -80,7 +78,7 @@ fun AnelProgresso(
     }
 }
 
-/** Cartão de métrica: rótulo pequeno colorido + número grande + unidade. */
+/** Cartão de métrica: rótulo, número grande e unidade. */
 @Composable
 fun CartaoMetrica(
     rotulo: String,
@@ -105,16 +103,13 @@ fun CartaoMetrica(
     }
 }
 
-/** Título de seção dentro de um cartão ("ÚLTIMOS 7 DIAS"). */
+/** Título de seção em maiúsculas. */
 @Composable
 fun TituloSecao(texto: String, modifier: Modifier = Modifier) {
     Text(texto.uppercase(), style = EstiloRotulo, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = modifier)
 }
 
-/**
- * Gráfico de barras dos últimos 7 dias, feito só com Box (sem biblioteca):
- * cada coluna tem uma "trilha" cinza e, por cima, a parte preenchida com altura = fração da meta.
- */
+/** Barras dos últimos 7 dias, só com Box: altura = fillMaxHeight(fração). */
 @Composable
 fun GraficoSemana(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -132,7 +127,7 @@ fun GraficoSemana(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: 
                     if (dia.fracao > 0f) {
                         val preenchimento = if (dia.estado == EstadoDia.CONCLUIDO) cor else cor.copy(alpha = 0.5f)
                         Box(
-                            Modifier.fillMaxWidth().fillMaxHeight(dia.fracao)   // altura proporcional à meta
+                            Modifier.fillMaxWidth().fillMaxHeight(dia.fracao)
                                 .background(preenchimento, RoundedCornerShape(6.dp))
                         )
                     }
@@ -151,14 +146,11 @@ fun GraficoSemana(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: 
     }
 }
 
-/**
- * Mapa do mês: uma bolinha por dia, em grade de 7 colunas (segunda a domingo).
- * A cor diz a situação do dia (mesma regra da sequência).
- */
+/** Mapa do mês: grade de 7 colunas; a cor segue a regra da sequência. */
 @Composable
 fun MapaMes(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: Modifier = Modifier) {
     if (dias.isEmpty()) return
-    // Quantas casas vazias antes do dia 1 (DayOfWeek.value: segunda = 1 ... domingo = 7).
+    // Casas vazias antes do dia 1 (segunda = 1).
     val vazios = dias.first().data.dayOfWeek.value - 1
     val casas: List<DiaResumo?> = List(vazios) { null } + dias
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -170,7 +162,7 @@ fun MapaMes(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: Modifi
                 )
             }
         }
-        // chunked(7) quebra a lista em semanas (≈ .Chunk(7) do LINQ).
+        // chunked(7): quebra a lista em semanas.
         casas.chunked(7).forEach { semana ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 (0 until 7).forEach { i ->
@@ -186,7 +178,7 @@ fun MapaMes(dias: List<DiaResumo>, cor: Color, hoje: LocalDate, modifier: Modifi
 
 @Composable
 private fun BolinhaDia(dia: DiaResumo, cor: Color, ehHoje: Boolean) {
-    val (fundo, textoCor) = when (dia.estado) {   // desestrutura o Pair em duas variáveis
+    val (fundo, textoCor) = when (dia.estado) {
         EstadoDia.CONCLUIDO -> cor to Color.Black
         EstadoDia.PARCIAL -> cor.copy(alpha = 0.35f) to MaterialTheme.colorScheme.onSurface
         EstadoDia.FALHA -> Trilha to MaterialTheme.colorScheme.onSurfaceVariant

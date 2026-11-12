@@ -13,23 +13,19 @@ import java.time.LocalDate
 interface RegistroDiarioDao {
 
     // ---------- CREATE ----------
-    // REPLACE: se já existir registro do mesmo hábito no mesmo dia (índice único), substitui
-    // em vez de lançar erro — proteção contra toques duplos muito rápidos.
+    // REPLACE: se já existe registro no mesmo dia, substitui (evita erro com toque duplo).
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun inserir(registro: RegistroDiario): Long
 
     // ---------- READ ----------
-    // Histórico de um hábito, do mais recente para o mais antigo.
     @Query("SELECT * FROM registros_diarios WHERE habitoId = :habitoId ORDER BY data DESC")
     fun observarPorHabito(habitoId: Long): Flow<List<RegistroDiario>>
 
-    // Todos os registros de um dia (usado na tela "Hoje").
-    // O Converters transforma o LocalDate do parâmetro em Long automaticamente.
+    // Registros de um dia (tela "Hoje").
     @Query("SELECT * FROM registros_diarios WHERE data = :data")
     fun observarPorData(data: LocalDate): Flow<List<RegistroDiario>>
 
-    // Registros de TODOS os hábitos de um usuário num intervalo de datas (gráfico "Sua semana").
-    // INNER JOIN: registros_diarios não tem usuarioId; quem sabe o dono é a tabela habitos.
+    // INNER JOIN com habitos, porque só lá está o usuarioId. Usado no gráfico da semana.
     @Query(
         """
         SELECT r.* FROM registros_diarios r

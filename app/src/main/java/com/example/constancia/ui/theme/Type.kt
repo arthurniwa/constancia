@@ -8,21 +8,17 @@ import androidx.compose.ui.unit.sp
 import android.graphics.Typeface as AndroidTypeface
 import androidx.compose.ui.text.font.Typeface as ComposeTypeface
 
-/**
- * Fonte condensada que já vem no Android ("sans-serif-condensed"): números altos e estreitos,
- * típicos de apps de esporte. Não precisa baixar nada.
- * `import ... as ...` renomeia na importação (≈ `using Alias = Namespace.Tipo;` do C#).
- */
+/** Fonte condensada que já vem no Android, para os números. */
 val FonteNumeros = FontFamily(ComposeTypeface(AndroidTypeface.create("sans-serif-condensed", AndroidTypeface.BOLD)))
 
-/** Estilos extras para métricas (o Material não tem um "número gigante"). */
+/** Estilos para números grandes (métricas). */
 object EstiloNumero {
     val gigante = TextStyle(fontFamily = FonteNumeros, fontWeight = FontWeight.Bold, fontSize = 44.sp, lineHeight = 46.sp)
     val grande = TextStyle(fontFamily = FonteNumeros, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 34.sp)
     val medio = TextStyle(fontFamily = FonteNumeros, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 22.sp)
 }
 
-/** Rótulos pequenos em maiúsculas acima dos números ("SEQUÊNCIA", "RECORDE"). */
+/** Rótulo pequeno acima dos números ("SEQUÊNCIA"). */
 val EstiloRotulo = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.2.sp)
 
 val Typography = Typography(

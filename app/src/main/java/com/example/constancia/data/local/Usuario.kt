@@ -5,11 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 
-/**
- * Tabela "usuarios". A senha NUNCA é salva: guardamos só o hash (resultado do PBKDF2)
- * e o salt (bytes aleatórios usados no hash). Ver SenhaHasher.kt.
- * ≈ a tabela AspNetUsers do ASP.NET Identity (que também guarda só o PasswordHash).
- */
+/** Tabela "usuarios". A senha nunca é salva: só o hash PBKDF2 e o salt (ver SenhaHasher). */
 @Entity(
     tableName = "usuarios",
     // E-mail único: o banco recusa dois cadastros com o mesmo e-mail.
@@ -19,8 +15,8 @@ data class Usuario(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val nome: String,
-    val email: String,          // sempre salvo em minúsculas, sem espaços
-    val senhaHash: String,      // Base64 do hash
-    val salt: String,           // Base64 do salt
+    val email: String,          // sempre em minúsculas
+    val senhaHash: String,      // Base64
+    val salt: String,           // Base64
     val dataCriacao: LocalDate = LocalDate.now()
 )

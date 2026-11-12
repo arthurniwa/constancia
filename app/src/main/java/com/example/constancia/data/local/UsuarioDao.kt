@@ -9,8 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UsuarioDao {
 
-    // ABORT: se o e-mail já existir (índice único), o Room lança SQLiteConstraintException.
-    // O AuthRepository captura e transforma em "E-mail já cadastrado".
+    // ABORT: e-mail repetido lança erro; o AuthRepository vira "E-mail já cadastrado".
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun inserir(usuario: Usuario): Long
 

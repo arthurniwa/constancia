@@ -8,11 +8,7 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
 
-/**
- * Testes unitários (rodam no computador, sem emulador) — ≈ xUnit/NUnit.
- * Rodar: botão ▶ ao lado da classe, ou `./gradlew test`.
- * "Hoje" fixo em terça, 10/11/2026, para o resultado não depender do dia em que rodar.
- */
+/** Testes unitários da sequência. "Hoje" fixo em terça, 10/11/2026. */
 class CalculadoraSequenciaTest {
 
     private val hoje = LocalDate.of(2026, 11, 10)
@@ -24,12 +20,11 @@ class CalculadoraSequenciaTest {
         dataCriacao = dia(1)
     )
 
-    // `vararg` ≈ `params int[]` do C#
     private fun feitos(vararg dias: Int, valor: Int = 1) =
         dias.map { RegistroDiario(habitoId = 1, data = dia(it), valor = valor) }
 
     @Test
-    fun `tres dias seguidos ate hoje`() {   // nomes com crase permitem espaços (só em testes)
+    fun `tres dias seguidos ate hoje`() {
         val r = CalculadoraSequencia.calcular(todosOsDias, feitos(8, 9, 10), hoje = hoje)
         assertEquals(3, r.sequenciaAtual)
         assertEquals(3, r.recorde)

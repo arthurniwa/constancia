@@ -12,28 +12,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Tudo que a tela de lista precisa para se desenhar. */
+/** Estado da tela de lista. */
 data class HabitosUiState(
     val carregando: Boolean = true,
     val habitos: List<Habito> = emptyList()
 )
 
-/**
- * ViewModel: guarda o estado da tela e sobrevive à rotação
- * (a Activity é destruída e recriada ao girar; o ViewModel não).
- * ≈ o @code de um componente Blazor, mas separado da UI e com vida mais longa.
- */
+/** ViewModel: guarda o estado da tela e sobrevive à rotação (a Activity não). */
 class HabitosViewModel(
     private val repository: HabitoRepository,
-    usuarioId: Long   // usuário logado: só os hábitos dele aparecem
+    usuarioId: Long   // só os hábitos do usuário logado
 ) : ViewModel() {
 
     /**
-     * READ do CRUD: transforma o Flow do Room em StateFlow (um Flow que sempre tem um "valor atual",
-     * ≈ um BehaviorSubject do Rx). Toda vez que a tabela mudar, a lista na tela muda sozinha.
-     * - viewModelScope: coroutines que são canceladas quando o ViewModel morre.
-     * - WhileSubscribed(5000): para de escutar o banco 5s depois que a tela some
-     *   (os 5s evitam recomeçar a consulta durante uma rotação).
+     * READ: lista do banco como StateFlow; a tela atualiza sozinha quando a tabela muda.
+     * WhileSubscribed(5000): para de escutar 5s após a tela sumir (sobrevive à rotação).
      */
     val uiState: StateFlow<HabitosUiState> = repository.observarDoUsuario(usuarioId)
         .map { lista -> HabitosUiState(carregando = false, habitos = lista) }
@@ -43,8 +36,7 @@ class HabitosViewModel(
             initialValue = HabitosUiState(carregando = true)
         )
 
-    // Hábito aguardando confirmação de exclusão (o diálogo fica aberto mesmo se girar a tela).
-    // Padrão "backing property": _privado mutável, público só leitura.
+    // Hábito aguardando confirmação de exclusão. _privado mutável, público só leitura.
     private val _habitoParaExcluir = MutableStateFlow<Habito?>(null)
     val habitoParaExcluir: StateFlow<Habito?> = _habitoParaExcluir.asStateFlow()
 
@@ -54,9 +46,9 @@ class HabitosViewModel(
 
     /** DELETE do CRUD. */
     fun confirmarExclusao() {
-        val habito = _habitoParaExcluir.value ?: return   // nada para excluir → sai
+        val habito = _habitoParaExcluir.value ?: return
         _habitoParaExcluir.value = null
-        // launch ≈ disparar uma Task (fire-and-forget seguro, preso ao ciclo de vida do ViewModel).
+        // Roda em segundo plano; cancela se o ViewModel morrer.
         viewModelScope.launch { repository.excluir(habito) }
     }
 }

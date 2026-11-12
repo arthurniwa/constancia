@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Os 3 momentos do app: ainda lendo a sessão, sem login, ou com alguém logado. */
+/** Estado da sessão: carregando, deslogado ou logado. */
 sealed interface EstadoSessao {
-    data object Carregando : EstadoSessao              // `data object` = singleton com toString bonito
+    data object Carregando : EstadoSessao
     data object Deslogado : EstadoSessao
     data class Logado(val usuario: Usuario) : EstadoSessao
 }
@@ -33,13 +33,13 @@ data class AuthUiState(
     val erroEmail: String? = null,
     val erroSenha: String? = null,
     val erroConfirmar: String? = null,
-    val erroGeral: String? = null,       // ex.: "E-mail ou senha incorretos."
+    val erroGeral: String? = null,       // ex.: senha incorreta
     val enviando: Boolean = false
 )
 
 class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
-    /** Observado pela RaizApp para decidir: tela de login ou o app. */
+    /** A RaizApp observa isto para mostrar o login ou o app. */
     val sessao: StateFlow<EstadoSessao> = authRepository.usuarioLogado
         .map { usuario -> if (usuario == null) EstadoSessao.Deslogado else EstadoSessao.Logado(usuario) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, EstadoSessao.Carregando)
@@ -48,7 +48,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         private set
 
     fun alternarModo() {
-        // Troca entre Entrar/Criar conta mantendo o e-mail digitado e limpando os erros.
+        // Troca Entrar/Criar conta, mantendo só o e-mail.
         uiState = AuthUiState(modoCadastro = !uiState.modoCadastro, email = uiState.email)
     }
 
@@ -63,7 +63,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         val erroNome = if (s.modoCadastro && s.nome.isBlank()) "Informe seu nome" else null
         val erroEmail = when {
             s.email.isBlank() -> "Informe o e-mail"
-            // Patterns.EMAIL_ADDRESS: expressão regular pronta do Android para e-mails.
+            // Regex de e-mail pronta do Android.
             !Patterns.EMAIL_ADDRESS.matcher(s.email.trim()).matches() -> "E-mail inválido"
             else -> null
         }
@@ -85,8 +85,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
             val resultado = if (s.modoCadastro) authRepository.cadastrar(s.nome, s.email, s.senha)
                             else authRepository.entrar(s.email, s.senha)
             uiState = when (resultado) {
-                // Deu certo: limpa o formulário (inclusive a senha). A RaizApp troca de tela sozinha
-                // porque a sessão mudou.
+                // Sucesso: limpa o form; a RaizApp troca de tela porque a sessão mudou.
                 is ResultadoAuth.Sucesso -> AuthUiState()
                 is ResultadoAuth.Erro -> uiState.copy(enviando = false, erroGeral = resultado.mensagem)
             }

@@ -4,14 +4,7 @@ import com.example.constancia.data.local.Habito
 import com.example.constancia.data.local.HabitoDao
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Repository: a "porta de entrada" dos dados para os ViewModels.
- * O ViewModel não sabe se o dado vem do Room, da API ou de cache — só fala com o repositório.
- * ≈ a camada de Repository/Service que você usaria numa API .NET entre o Controller e o DbContext.
- *
- * `private val habitoDao` no construtor = construtor primário: declara o parâmetro E o campo
- * de uma vez (≈ primary constructor do C# 12).
- */
+/** Repository: os ViewModels pedem dados aqui, sem saber que vêm do Room. */
 class HabitoRepository(private val habitoDao: HabitoDao) {
 
     fun observarDoUsuario(usuarioId: Long): Flow<List<Habito>> = habitoDao.observarDoUsuario(usuarioId)

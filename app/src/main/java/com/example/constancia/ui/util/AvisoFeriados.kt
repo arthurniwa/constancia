@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Linha discreta "Carregando feriados…" (estado de carregamento da API). */
+/** Estado "carregando" dos feriados da API. */
 @Composable
 fun CarregandoFeriados(modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
@@ -32,7 +32,7 @@ fun CarregandoFeriados(modifier: Modifier = Modifier) {
     }
 }
 
-/** Cartão de erro amigável com botão "Tentar novamente" (falha de rede ou da API). */
+/** Estado "erro" dos feriados, com botão "Tentar novamente". */
 @Composable
 fun ErroFeriados(mensagem: String, onTentarNovamente: () -> Unit, modifier: Modifier = Modifier) {
     Card(

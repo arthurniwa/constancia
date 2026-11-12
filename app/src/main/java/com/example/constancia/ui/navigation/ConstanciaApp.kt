@@ -27,17 +27,14 @@ import com.example.constancia.ui.habitos.HabitosScreen
 import com.example.constancia.ui.historico.HistoricoScreen
 import com.example.constancia.ui.hoje.HojeScreen
 
-/**
- * Rotas do app (≈ os `@page "/habitos/{id}"` do Blazor).
- * `const val` = constante em tempo de compilação (≈ `const` do C#).
- */
+/** Rotas do app (como @page no Blazor). */
 object Rotas {
     const val HOJE = "hoje"
     const val HABITOS = "habitos"
-    // id opcional (0 = criar); sugestao opcional (-1 = nenhuma; senão índice em SUGESTOES).
+    // id 0 = criar; sugestao = índice em SUGESTOES que preenche o form (-1 = nenhuma)
     const val HABITO_FORM = "habito_form?id={id}&sugestao={sugestao}"
-    fun habitoForm(id: Long = 0L, sugestao: Int = -1) = "habito_form?id=$id&sugestao=$sugestao"   // "$id" = interpolação (≈ $"...{id}")
-    const val HISTORICO = "historico/{habitoId}"           // id obrigatório (faz parte do caminho)
+    fun habitoForm(id: Long = 0L, sugestao: Int = -1) = "habito_form?id=$id&sugestao=$sugestao"
+    const val HISTORICO = "historico/{habitoId}"           // id obrigatório
     fun historico(habitoId: Long) = "historico/$habitoId"
     const val DETALHES = "detalhes/{habitoId}"
     fun detalhes(habitoId: Long) = "detalhes/$habitoId"
@@ -53,15 +50,14 @@ private val ABAS = listOf(
 
 @Composable
 fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
-    // NavController ≈ NavigationManager do Blazor: guarda a pilha de telas e navega.
-    // `remember` mantém o mesmo objeto entre recomposições.
+    // NavController: guarda a pilha de telas e navega.
     val navController = rememberNavController()
     val entradaAtual by navController.currentBackStackEntryAsState()
     val rotaAtual = entradaAtual?.destination?.route
 
     Scaffold(
         bottomBar = {
-            // Barra inferior só nas telas principais (no formulário ela some).
+            // Barra inferior só nas telas principais.
             if (ABAS.any { it.rota == rotaAtual }) {
                 NavigationBar {
                     ABAS.forEach { aba ->
@@ -69,7 +65,7 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
                             selected = rotaAtual == aba.rota,
                             onClick = {
                                 navController.navigate(aba.rota) {
-                                    // Evita empilhar várias cópias da mesma aba ao tocar repetidas vezes.
+                                    // Não empilha cópias da mesma aba.
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
@@ -83,19 +79,17 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
             }
         }
     ) { innerPadding ->
-        // NavHost = a "área" onde as telas aparecem (≈ <Router> + @Body do Blazor).
+        // NavHost: área onde as telas trocam conforme a rota (como o Router do Blazor).
         NavHost(
             navController = navController,
             startDestination = Rotas.HOJE,
-            // padding + consumeWindowInsets: as telas internas não somam de novo o espaço
-            // da barra de status/navegação (evita espaço duplicado ou conteúdo escondido).
+            // innerPadding: conteúdo não fica atrás das barras.
             modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
         ) {
             composable(Rotas.HOJE) {
                 HojeScreen(
                     nomeUsuario = nomeUsuario,
                     onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) },
-                    // `?:` troca null por -1 ("sem sugestão").
                     onCriarHabito = { sugestao -> navController.navigate(Rotas.habitoForm(sugestao = sugestao ?: -1)) }
                 )
             }
@@ -111,13 +105,13 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
 
             composable(
                 route = Rotas.HABITO_FORM,
-                // Declara o argumento {id}: tipo Long, padrão 0 (= novo hábito).
+                // Argumentos da rota (id 0 = novo hábito).
                 arguments = listOf(
                     navArgument("id") { type = NavType.LongType; defaultValue = 0L },
                     navArgument("sugestao") { type = NavType.IntType; defaultValue = -1 }
                 )
             ) {
-                HabitoFormScreen(onVoltar = { navController.popBackStack() })  // volta para a tela anterior
+                HabitoFormScreen(onVoltar = { navController.popBackStack() })
             }
 
             composable(

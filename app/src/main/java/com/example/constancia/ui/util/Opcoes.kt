@@ -2,10 +2,10 @@ package com.example.constancia.ui.util
 
 import java.time.DayOfWeek
 
-/** Emojis que o usuário pode escolher como ícone do hábito. */
+/** Emojis disponíveis para o ícone do hábito. */
 val OPCOES_ICONE = listOf("💧", "🏃", "📚", "🧘", "🍎", "💤", "✍️", "💪", "🎸", "🧹", "💊", "🌱")
 
-/** Paleta de cores (ARGB). `0xFF...toInt()` porque o literal hexadecimal é Long em Kotlin. */
+/** Paleta de cores (ARGB). */
 val OPCOES_COR = listOf(
     0xFF4CAF50.toInt(), // verde
     0xFF2196F3.toInt(), // azul
@@ -19,11 +19,7 @@ val OPCOES_COR = listOf(
 
 private val NOMES_CURTOS = listOf("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
 
-/**
- * Função de extensão: "adiciona" um método a um tipo que não é seu
- * (≈ extension method `static string NomeCurto(this DayOfWeek d)` do C#).
- * DayOfWeek.value vai de 1 (segunda) a 7 (domingo).
- */
+/** Função de extensão: "Seg", "Ter"... (value 1 = segunda). */
 fun DayOfWeek.nomeCurto(): String = NOMES_CURTOS[value - 1]
 
 /** Ex.: "Todos os dias", "Seg, Qua, Sex". */

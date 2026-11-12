@@ -11,37 +11,31 @@ data class Estatisticas(
     val totalConcluidos: Int
 )
 
-/** Situação de um dia para um hábito. Usada na sequência E nos gráficos (mesma regra nos dois). */
+/** Situação de um dia. Mesma regra para a sequência e para os gráficos. */
 enum class EstadoDia {
-    CONCLUIDO,        // valor ≥ meta → soma na sequência
-    PARCIAL,          // fez um pouco, mas não bateu a meta (dia passado) → quebra
-    FALHA,            // dia programado, passado, sem nada → quebra
-    HOJE_PENDENTE,    // hoje ainda não concluído → neutro (o dia não acabou)
-    FERIADO,          // feriado nacional (BrasilAPI) → neutro
-    NAO_PROGRAMADO,   // ex.: sábado num hábito de seg–sex → neutro
-    FORA_DO_PERIODO   // antes do início do hábito ou no futuro → neutro
+    CONCLUIDO,        // bateu a meta → soma
+    PARCIAL,          // não bateu a meta → quebra
+    FALHA,            // dia programado sem nada → quebra
+    HOJE_PENDENTE,    // neutro (o dia não acabou)
+    FERIADO,          // neutro
+    NAO_PROGRAMADO,   // neutro (ex.: sábado num hábito seg–sex)
+    FORA_DO_PERIODO   // neutro (antes do início ou futuro)
 }
 
-/** Um dia já classificado, pronto para desenhar (fracao = quanto do anel/barra preencher, 0..1). */
+/** Um dia já classificado, pronto para desenhar (fracao = 0..1 preenchido). */
 data class DiaResumo(val data: LocalDate, val valor: Int, val estado: EstadoDia, val fracao: Float)
 
 /**
- * Regra de negócio pura (sem Android, sem banco): recebe dados e devolve números.
- * Por isso dá para testar com um teste unitário simples (ver CalculadoraSequenciaTest).
- * `object` = singleton sem estado (≈ uma `static class` do C#).
- *
- * Como cada dia conta para a sequência:
- *  - CONCLUIDO                                   → soma +1
- *  - HOJE_PENDENTE, FERIADO, NAO_PROGRAMADO, FORA → neutro: não soma, não quebra
- *  - PARCIAL, FALHA                              → QUEBRA a sequência
+ * Regra de negócio pura (sem Android, sem banco), por isso tem teste unitário.
+ * CONCLUIDO soma, PARCIAL/FALHA quebram, o resto é neutro.
  */
 object CalculadoraSequencia {
 
-    /** Primeiro dia que conta: criação do hábito, ou antes se o usuário registrou dias anteriores. */
+    /** Primeiro dia que conta: criação do hábito ou o registro mais antigo. */
     fun inicio(habito: Habito, registros: List<RegistroDiario>): LocalDate =
         minOf(habito.dataCriacao, registros.minOfOrNull { it.data } ?: habito.dataCriacao)
 
-    /** Classifica um dia. A ORDEM dos testes importa: concluído vale mesmo em feriado ou fim de semana. */
+    /** Classifica um dia. A ordem importa: concluído vale até em feriado/fim de semana. */
     fun estadoDoDia(
         habito: Habito,
         valor: Int,
@@ -59,7 +53,7 @@ object CalculadoraSequencia {
         else -> EstadoDia.FALHA
     }
 
-    /** Lista de dias [de, ate] já classificados — alimenta o gráfico semanal e o mapa do mês. */
+    /** Dias de [de] até [ate] classificados, para os gráficos. */
     fun resumir(
         habito: Habito,
         registros: List<RegistroDiario>,
@@ -70,7 +64,6 @@ object CalculadoraSequencia {
     ): List<DiaResumo> {
         val valorPorDia = registros.associate { it.data to it.valor }
         val inicio = inicio(habito, registros)
-        // generateSequence ≈ um `yield return` em loop: de, de+1, de+2... até passar de `ate`.
         return generateSequence(de) { it.plusDays(1) }
             .takeWhile { !it.isAfter(ate) }
             .map { dia ->
@@ -91,9 +84,7 @@ object CalculadoraSequencia {
         feriados: Set<LocalDate> = emptySet(),
         hoje: LocalDate = LocalDate.now()
     ): Estatisticas {
-        // Map data → valor (≈ ToDictionary). Busca O(1) para cada dia.
         val valorPorDia: Map<LocalDate, Int> = registros.associate { it.data to it.valor }
-        // `to` cria um par (Pair) — ≈ uma tupla (data, valor) do C#.
 
         val inicio = inicio(habito, registros)
         if (inicio.isAfter(hoje)) return Estatisticas(0, 0, 0)
@@ -125,7 +116,6 @@ object CalculadoraSequencia {
         }
 
         val total = valorPorDia.count { (data, valor) -> valor >= habito.alvoDiario && !data.isAfter(hoje) }
-        // `(data, valor) ->` desestrutura a entrada do Map (≈ deconstruction de tupla do C#).
 
         return Estatisticas(sequenciaAtual = atual, recorde = maxOf(recorde, atual), totalConcluidos = total)
     }

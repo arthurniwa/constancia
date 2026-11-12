@@ -47,7 +47,7 @@ import com.example.constancia.ui.util.nomeCurto
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 
-/** Tela de criar/editar hábito (CREATE e UPDATE da tabela Habito). */
+/** Mesma tela para criar e editar hábito. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HabitoFormScreen(
@@ -55,7 +55,7 @@ fun HabitoFormScreen(
     viewModel: HabitoFormViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val estado = viewModel.uiState
-    // Escopo de coroutine ligado a esta tela, para chamar a função `suspend fun salvar()`.
+    // Para chamar salvar() (suspend) a partir do botão.
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -74,7 +74,7 @@ fun HabitoFormScreen(
             Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            return@Scaffold   // "return" só desta lambda (≈ sair cedo do bloco)
+            return@Scaffold   // sai só desta lambda
         }
 
         Column(
@@ -82,16 +82,16 @@ fun HabitoFormScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .imePadding()                          // sobe o conteúdo quando o teclado abre
-                .verticalScroll(rememberScrollState()) // rola em telas pequenas / modo paisagem
+                .verticalScroll(rememberScrollState()) // rola em telas pequenas/paisagem
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
                 value = estado.nome,
-                onValueChange = viewModel::alterarNome,  // a cada tecla, avisa o ViewModel
+                onValueChange = viewModel::alterarNome,  // cada tecla vai para o ViewModel
                 label = { Text("Nome do hábito") },
                 isError = estado.erroNome != null,
-                supportingText = estado.erroNome?.let { { Text(it) } },  // mostra o erro embaixo do campo
+                supportingText = estado.erroNome?.let { { Text(it) } },  // erro embaixo do campo
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -163,14 +163,14 @@ fun HabitoFormScreen(
                 supportingText = {
                     Text(estado.erroMeta ?: "Deixe vazio para hábitos do tipo feito/não feito")
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // teclado numérico
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Button(
                 onClick = {
-                    // launch: inicia a coroutine; dentro dela podemos chamar funções suspend.
+                    // Salva; se passou na validação, volta.
                     scope.launch { if (viewModel.salvar()) onVoltar() }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -179,10 +179,7 @@ fun HabitoFormScreen(
     }
 }
 
-/**
- * Título + conteúdo. O último parâmetro é uma lambda `@Composable`, então quem chama
- * pode usar a sintaxe `Secao("x") { ... }` (≈ RenderFragment ChildContent do Blazor).
- */
+/** Título + conteúdo; uso: `Secao("x") { ... }`. */
 @Composable
 private fun Secao(titulo: String, conteudo: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

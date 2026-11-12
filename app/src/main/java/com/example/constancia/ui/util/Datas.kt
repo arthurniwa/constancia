@@ -9,7 +9,7 @@ private val PT_BR: Locale = Locale.forLanguageTag("pt-BR")
 private val FORMATO_LONGO = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", PT_BR)
 private val FORMATO_CURTO = DateTimeFormatter.ofPattern("dd/MM/yyyy", PT_BR)
 
-/** "terça-feira, 10 de novembro" → com a primeira letra maiúscula. */
+/** "Terça-feira, 10 de novembro" */
 fun LocalDate.formatoLongo(): String =
     format(FORMATO_LONGO).replaceFirstChar { it.titlecase(PT_BR) }
 

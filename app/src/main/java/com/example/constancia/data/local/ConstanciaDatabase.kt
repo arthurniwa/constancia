@@ -6,48 +6,37 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-/**
- * O banco em si ≈ o DbContext do Entity Framework.
- * - entities: as tabelas (≈ os DbSet<T>)
- * - version: versão do esquema. Mudou uma entidade? Sobe a versão (≈ uma migration).
- * - exportSchema = false: não gera o JSON do esquema (não precisamos para o trabalho).
- */
+/** O banco Room: lista as tabelas (entities) e a versão do esquema. */
 @Database(
     entities = [Usuario::class, Habito::class, RegistroDiario::class],
-    version = 2,   // subiu de 1 → 2 quando entrou a tabela usuarios (fallbackToDestructiveMigration recria o banco)
+    version = 2,   // subiu para 2 quando entrou a tabela usuarios
     exportSchema = false
 )
-@TypeConverters(Converters::class)   // registra os conversores de LocalDate, Set<DayOfWeek>...
-abstract class ConstanciaDatabase : RoomDatabase() {   // `:` = herança (igual ao C#)
+@TypeConverters(Converters::class)
+abstract class ConstanciaDatabase : RoomDatabase() {
 
     // O Room gera a implementação destes métodos.
     abstract fun usuarioDao(): UsuarioDao
     abstract fun habitoDao(): HabitoDao
     abstract fun registroDiarioDao(): RegistroDiarioDao
 
-    // `companion object` ≈ membros `static` de uma classe C#.
+    // companion object: membros "estáticos" da classe (como static no C#).
     companion object {
-        // @Volatile: toda thread enxerga o valor mais recente (≈ `volatile` do C#).
         @Volatile
         private var instancia: ConstanciaDatabase? = null
 
-        /**
-         * Singleton: abrir o banco é caro, então o app inteiro usa uma única instância
-         * (≈ registrar o DbContext como Singleton, ou um `Lazy<T>` estático).
-         */
+        /** Singleton: o app inteiro usa uma única instância do banco. */
         fun obter(context: Context): ConstanciaDatabase =
-            // Se já existe, devolve. Senão, entra no `synchronized` (≈ `lock` do C#) e cria.
             instancia ?: synchronized(this) {
                 instancia ?: Room.databaseBuilder(
                     context.applicationContext,
                     ConstanciaDatabase::class.java,
-                    "constancia.db"                 // nome do arquivo SQLite no aparelho
+                    "constancia.db"
                 )
-                    // Se a versão subir sem migration, apaga e recria o banco.
-                    // Aceitável num trabalho acadêmico; num app real escreveríamos Migrations.
+                    // Versão subiu sem migration? Apaga e recria o banco (ok para trabalho acadêmico).
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
-                    .also { instancia = it }        // `also` executa algo com o objeto e o devolve
+                    .also { instancia = it }
             }
     }
 }

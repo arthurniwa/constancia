@@ -51,11 +51,8 @@ import com.example.constancia.ui.AppViewModelProvider
 import com.example.constancia.ui.util.resumo
 
 /**
- * Tela "Hábitos" (lista). `@Composable` ≈ um componente .razor: uma função que descreve a UI
- * a partir do estado. Quando o estado muda, o Compose chama a função de novo ("recomposição").
- *
- * Os parâmetros `onNovo`/`onAbrir` são lambdas (≈ EventCallback do Blazor): a tela não sabe
- * navegar, ela só avisa "o usuário quer criar/abrir" e quem chamou decide o que fazer.
+ * Lista de hábitos. @Composable = função que desenha a UI (como componente .razor);
+ * redesenha quando o estado muda. Os `on...` só avisam; quem chama navega.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,13 +63,13 @@ fun HabitosScreen(
     onEditar: (Long) -> Unit,
     viewModel: HabitosViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    // collectAsState: transforma o StateFlow em estado do Compose (a tela redesenha quando muda).
+    // collectAsState: a tela redesenha quando o StateFlow muda.
     val uiState by viewModel.uiState.collectAsState()
     val habitoParaExcluir by viewModel.habitoParaExcluir.collectAsState()
-    // rememberSaveable: estado simples da própria tela que sobrevive à rotação (Boolean é "salvável").
+    // rememberSaveable: diálogo de sair continua aberto após girar a tela.
     var confirmandoSaida by rememberSaveable { mutableStateOf(false) }
 
-    Scaffold(   // Scaffold = "esqueleto" Material: barra de topo, FAB, conteúdo — sem sobreposição.
+    Scaffold(   // Esqueleto da tela: barra de topo, FAB e conteúdo.
         topBar = {
             TopAppBar(
                 title = { Text("Meus hábitos") },
@@ -88,7 +85,7 @@ fun HabitosScreen(
                 Icon(Icons.Default.Add, contentDescription = "Novo hábito")
             }
         }
-    ) { innerPadding ->   // innerPadding: espaço ocupado pelas barras, para o conteúdo não ficar embaixo delas
+    ) { innerPadding ->   // innerPadding: conteúdo não fica embaixo das barras
         val modifier = Modifier.padding(innerPadding).fillMaxSize()
         when {
             uiState.carregando -> Box(modifier, contentAlignment = Alignment.Center) {
@@ -98,13 +95,12 @@ fun HabitosScreen(
                 texto = "Você ainda não tem hábitos.\nToque em + para criar o primeiro.",
                 modifier = modifier
             )
-            // LazyColumn ≈ lista virtualizada (<Virtualize> do Blazor): só desenha o que está visível.
+            // LazyColumn: só desenha os itens visíveis.
             else -> LazyColumn(
                 modifier = modifier,
-                contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 88.dp), // 88dp: espaço para o FAB não cobrir o último item
+                contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 88.dp), // 88dp: FAB não cobre o último item
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // `key` ajuda o Compose a saber qual item é qual quando a lista muda.
                 items(uiState.habitos, key = { it.id }) { habito ->
                     HabitoItem(
                         habito = habito,
@@ -127,11 +123,10 @@ fun HabitosScreen(
         )
     }
 
-    // Diálogo de confirmação: aparece sempre que houver um hábito marcado para exclusão.
-    // `?.let` ≈ "se não for null, faça".
+    // Confirmação de exclusão: aparece se houver hábito marcado.
     habitoParaExcluir?.let { habito ->
         AlertDialog(
-            onDismissRequest = viewModel::cancelarExclusao,   // `::` = referência a função (≈ method group do C#)
+            onDismissRequest = viewModel::cancelarExclusao,
             title = { Text("Excluir hábito?") },
             text = { Text("\"${habito.nome}\" e todo o histórico dele serão apagados.") },
             confirmButton = { TextButton(onClick = viewModel::confirmarExclusao) { Text("Excluir") } },
@@ -154,13 +149,13 @@ private fun HabitoItem(
         ) {
             IconeHabito(habito.icone, habito.cor)
             Spacer(Modifier.width(12.dp))
-            // weight(1f) = ocupa o espaço que sobrar (≈ flex: 1 no CSS), empurrando os botões para a direita.
+            // weight(1f): ocupa o espaço que sobra.
             Column(Modifier.weight(1f)) {
                 Text(
                     habito.nome,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis   // nome longo vira "..." em vez de sobrepor os botões
+                    overflow = TextOverflow.Ellipsis   // nome longo vira "..."
                 )
                 val detalhe = habito.diasDaSemana.resumo() +
                     (habito.meta?.let { " · meta $it/dia" } ?: "")
@@ -172,7 +167,7 @@ private fun HabitoItem(
     }
 }
 
-/** Círculo colorido com o emoji do hábito. Reaproveitado em outras telas. */
+/** Círculo colorido com o emoji do hábito. */
 @Composable
 fun IconeHabito(icone: String, cor: Int, modifier: Modifier = Modifier) {
     Box(
@@ -185,7 +180,7 @@ fun IconeHabito(icone: String, cor: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** Mensagem centralizada para listas vazias. Reaproveitada em outras telas. */
+/** Mensagem para listas vazias. */
 @Composable
 fun MensagemVazia(texto: String, modifier: Modifier = Modifier) {
     Box(modifier.padding(32.dp), contentAlignment = Alignment.Center) {

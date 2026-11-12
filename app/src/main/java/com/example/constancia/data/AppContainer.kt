@@ -11,21 +11,15 @@ import com.example.constancia.data.repository.SessaoRepository
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-/**
- * Injeção de dependência "feita à mão".
- * ≈ o `builder.Services.AddSingleton<...>()` do Program.cs, só que sem framework:
- * um objeto que cria e guarda as dependências do app inteiro.
- * (Em projetos maiores usaríamos Hilt, que é o "container de DI" do Android.)
- */
+/** Injeção de dependência manual: cria e guarda banco, API e repositórios do app. */
 class AppContainer(context: Context) {
 
-    // `by lazy` ≈ Lazy<T> do C#: só cria na primeira vez que alguém acessar.
+    // by lazy: só cria no primeiro uso.
     private val database by lazy { ConstanciaDatabase.obter(context) }
 
-    // Retrofit configurado uma vez (≈ registrar um HttpClient com BaseAddress no DI).
     private val brasilApi: BrasilApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://brasilapi.com.br/")                 // precisa terminar com "/"
+            .baseUrl("https://brasilapi.com.br/")
             .addConverterFactory(GsonConverterFactory.create())   // JSON ↔ objetos Kotlin
             .build()
             .create(BrasilApiService::class.java)                 // gera a implementação da interface

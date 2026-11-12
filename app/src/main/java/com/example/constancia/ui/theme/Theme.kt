@@ -5,11 +5,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-/**
- * Tema único, escuro, com cores próprias (sem as cores automáticas do papel de parede do Android).
- * O MaterialTheme espalha estas cores para todos os componentes: Card, Button, NavigationBar...
- * ≈ variáveis CSS globais (:root { --primary: ... }) num site.
- */
+/** Tema escuro único; o MaterialTheme aplica estas cores em todos os componentes. */
 private val Esquema = darkColorScheme(
     primary = Azul,
     onPrimary = Color(0xFF00141F),
@@ -30,12 +26,11 @@ private val Esquema = darkColorScheme(
     onBackground = TextoPrincipal,
     surface = Fundo,
     onSurface = TextoPrincipal,
-    // Atenção: surfaceVariant precisa ser DIFERENTE de Cartao. O Material escolhe a cor do texto
-    // procurando a cor do fundo nesta lista; se Cartao também fosse surfaceVariant, o texto dos
-    // cartões sairia cinza (onSurfaceVariant) em vez de branco (onSurface).
+    // Atenção: surfaceVariant deve ser DIFERENTE de Cartao,
+    // senão o texto dos cartões sai cinza em vez de branco.
     surfaceVariant = CartaoAlto,
     onSurfaceVariant = TextoSecundario,
-    // "Containers" de superfície: o Material 3 usa estes tons em Card, NavigationBar, diálogos...
+    // Tons usados em Card, NavigationBar, diálogos...
     surfaceContainerLowest = Fundo,
     surfaceContainerLow = Superficie,
     surfaceContainer = Superficie,

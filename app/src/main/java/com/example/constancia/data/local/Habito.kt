@@ -9,15 +9,12 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 /**
- * Tabela "habitos".
- *
- * `data class` ≈ `record` do C#: o compilador gera equals/hashCode/toString/copy.
- * `@Entity` ≈ uma classe mapeada no DbContext do Entity Framework (vira tabela).
+ * Tabela "habitos". `data class` (como record no C#) gera equals/toString/copy.
+ * Cada hábito pertence a um usuário.
  */
 @Entity(
     tableName = "habitos",
-    // Cada hábito pertence a um usuário (1 Usuario → N Habitos).
-    // CASCADE: se o usuário for apagado, os hábitos dele (e, em cadeia, os registros) somem junto.
+    // CASCADE: apagou o usuário → apaga os hábitos (e os registros) dele.
     foreignKeys = [
         ForeignKey(
             entity = Usuario::class,
@@ -26,42 +23,34 @@ import java.time.LocalTime
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("usuarioId")]   // acelera "SELECT ... WHERE usuarioId = ?"
+    indices = [Index("usuarioId")]
 )
 data class Habito(
-    // `val` = propriedade somente leitura (≈ `init` / readonly). `var` seria mutável.
-    // autoGenerate = true ≈ IDENTITY no SQL Server. O valor 0 significa "ainda não salvo".
+    // 0 = ainda não salvo; o banco gera o id.
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
-    // Dono do hábito (chave estrangeira para usuarios.id).
     val usuarioId: Long,
 
     val nome: String,
 
-    // Um emoji (ex.: "💧"). Simples de salvar e de mostrar na tela.
-    val icone: String,
+    val icone: String,   // um emoji
 
-    // Cor no formato ARGB (Int), ex.: 0xFF4CAF50.toInt(). Na tela vira Color(cor).
-    val cor: Int,
+    val cor: Int,        // cor ARGB
 
-    // Room não sabe salvar Set<DayOfWeek>: o Converters.kt transforma em texto "1,3,5".
+    // Salvo como texto "1,3,5" pelo Converters.
     val diasDaSemana: Set<DayOfWeek>,
 
-    // `Int?` = pode ser nulo (≈ `int?` no C#). Em Kotlin, `Int` sem `?` NUNCA aceita null:
-    // o compilador barra. Null = hábito do tipo "feito/não feito"; com valor = meta numérica
-    // (ex.: 8 copos de água).
+    // null = hábito feito/não feito; com valor = meta numérica (ex.: 8 copos).
     val meta: Int? = null,
 
-    // Opcional: só usado se der tempo de fazer os lembretes (extra).
     val horarioLembrete: LocalTime? = null,
 
-    // Valor padrão de parâmetro (≈ parâmetro opcional do C#).
     val dataCriacao: LocalDate = LocalDate.now()
 ) {
-    /** Quanto o usuário precisa registrar no dia para o hábito contar como feito. */
+    /** Quanto precisa registrar no dia para contar como feito. */
     val alvoDiario: Int
-        get() = meta ?: 1   // `?:` (Elvis) ≈ `??` do C#: se meta for null, usa 1.
+        get() = meta ?: 1
 
     /** O hábito está programado para esse dia da semana? */
     fun programadoPara(data: LocalDate): Boolean = data.dayOfWeek in diasDaSemana

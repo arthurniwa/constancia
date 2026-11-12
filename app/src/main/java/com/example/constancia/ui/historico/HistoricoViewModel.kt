@@ -19,10 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-/**
- * Cada linha do histórico é um registro OU um feriado sem registro.
- * `sealed interface` garante que só existem esses dois tipos (o `when` da tela trata os dois).
- */
+/** Linha do histórico: registro OU feriado sem registro (sealed = só esses dois tipos). */
 sealed interface ItemHistorico {
     val data: LocalDate
     data class Registro(val registro: RegistroDiario, val nomeFeriado: String?) : ItemHistorico {
@@ -39,10 +36,10 @@ data class HistoricoUiState(
     val erroFeriados: String? = null
 )
 
-/** Registro sendo editado no diálogo (cópia de trabalho; só grava ao confirmar). */
+/** Cópia do registro em edição; só grava ao salvar. */
 data class EdicaoRegistro(val original: RegistroDiario, val data: LocalDate, val valor: Int)
 
-/** Para que o calendário (DatePicker) foi aberto. `enum class` ≈ enum do C#. */
+/** Para que o calendário foi aberto. */
 enum class ModoCalendario { FECHADO, ADICIONAR, EDITAR }
 
 class HistoricoViewModel(
@@ -52,7 +49,6 @@ class HistoricoViewModel(
     private val feriadoRepository: FeriadoRepository
 ) : ViewModel() {
 
-    // `checkNotNull` lança exceção se for null (a rota sempre traz o id).
     private val habitoId: Long = checkNotNull(savedStateHandle["habitoId"])
 
     private val hoje = LocalDate.now()
@@ -67,7 +63,7 @@ class HistoricoViewModel(
         }
     }
 
-    /** READ: hábito + registros + feriados, atualizados automaticamente. */
+    /** READ: combine recalcula quando hábito, registros ou feriados mudam. */
     val uiState: StateFlow<HistoricoUiState> = combine(
         habitoRepository.observarPorId(habitoId),
         registroRepository.observarPorHabito(habitoId),
@@ -83,7 +79,7 @@ class HistoricoViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoricoUiState())
 
-    /** Junta registros e feriados (do início do hábito até hoje) numa lista só, do mais recente ao mais antigo. */
+    /** Junta registros e feriados numa lista, do mais recente ao mais antigo. */
     private fun montarItens(
         habito: Habito,
         registros: List<RegistroDiario>,
@@ -95,10 +91,10 @@ class HistoricoViewModel(
         val soFeriado = feriados
             .filter { (data, _) -> !data.isBefore(inicio) && !data.isAfter(hoje) && data !in diasComRegistro }
             .map { (data, nome) -> ItemHistorico.Feriado(data, nome) }
-        return (doRegistro + soFeriado).sortedByDescending { it.data }   // ≈ OrderByDescending
+        return (doRegistro + soFeriado).sortedByDescending { it.data }
     }
 
-    // Estado dos diálogos — no ViewModel para sobreviver à rotação.
+    // Estado dos diálogos no ViewModel: sobrevive à rotação.
     private val _edicao = MutableStateFlow<EdicaoRegistro?>(null)
     val edicao = _edicao.asStateFlow()
 
@@ -108,7 +104,7 @@ class HistoricoViewModel(
     private val _paraExcluir = MutableStateFlow<RegistroDiario?>(null)
     val paraExcluir = _paraExcluir.asStateFlow()
 
-    // Mensagem para o Snackbar (aviso rápido no rodapé). null = nada a mostrar.
+    // Mensagem do Snackbar; null = nada a mostrar.
     private val _mensagem = MutableStateFlow<String?>(null)
     val mensagem = _mensagem.asStateFlow()
     fun mensagemExibida() { _mensagem.value = null }
@@ -121,7 +117,7 @@ class HistoricoViewModel(
         when (_calendario.value) {
             ModoCalendario.ADICIONAR -> adicionar(data)
             ModoCalendario.EDITAR -> _edicao.value = _edicao.value?.copy(data = data)
-            ModoCalendario.FECHADO -> Unit   // `Unit` ≈ void: não faz nada
+            ModoCalendario.FECHADO -> Unit
         }
         _calendario.value = ModoCalendario.FECHADO
     }
@@ -132,7 +128,7 @@ class HistoricoViewModel(
             if (registroRepository.buscar(habitoId, data) != null) {
                 _mensagem.value = "Já existe registro em ${data.formatoCurto()}. Edite o existente."
             } else {
-                // Já entra como concluído (valor = meta, ou 1 se não houver meta).
+                // Já entra como concluído.
                 registroRepository.inserir(RegistroDiario(habitoId = habitoId, data = data, valor = habito.alvoDiario))
                 _mensagem.value = "Registro adicionado"
             }
@@ -144,14 +140,13 @@ class HistoricoViewModel(
     fun cancelarEdicao() { _edicao.value = null }
     fun abrirCalendarioParaEditar() { _calendario.value = ModoCalendario.EDITAR }
     fun alterarValorEdicao(delta: Int) {
-        // coerceIn ≈ Math.Clamp: mantém o valor entre 1 e 9999.
         _edicao.value = _edicao.value?.let { it.copy(valor = (it.valor + delta).coerceIn(1, 9999)) }
     }
 
     fun salvarEdicao() {
         val e = _edicao.value ?: return
         viewModelScope.launch {
-            // Mudou a data para um dia que já tem registro? Bloqueia (índice único hábito+data).
+            // Bloqueia data que já tem registro (índice único hábito+data).
             val conflito = e.data != e.original.data && registroRepository.buscar(habitoId, e.data) != null
             if (conflito) {
                 _mensagem.value = "Já existe registro em ${e.data.formatoCurto()}"

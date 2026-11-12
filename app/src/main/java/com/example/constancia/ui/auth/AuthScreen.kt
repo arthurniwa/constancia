@@ -31,11 +31,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Tela inicial: entrar com uma conta existente ou criar uma nova (primeiro acesso). */
+/** Tela de login e cadastro. */
 @Composable
 fun AuthScreen(viewModel: AuthViewModel) {
     val s = viewModel.uiState
-    // Senha aparece como "•••" a não ser que o usuário toque em "Mostrar".
+    // Esconde a senha, a menos que toque em "Mostrar".
     val transformacaoSenha = if (s.mostrarSenha) VisualTransformation.None else PasswordVisualTransformation()
 
     Scaffold { innerPadding ->
@@ -64,7 +64,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
                 style = MaterialTheme.typography.titleLarge
             )
 
-            // widthIn(max): em paisagem/tablet o formulário não estica a tela inteira.
+            // Limita a largura em paisagem/tablet.
             val campo = Modifier.fillMaxWidth().widthIn(max = 480.dp)
 
             if (s.modoCadastro) {
@@ -79,7 +79,6 @@ fun AuthScreen(viewModel: AuthViewModel) {
                 value = s.email, onValueChange = viewModel::alterarEmail,
                 label = { Text("E-mail") }, singleLine = true, modifier = campo,
                 isError = s.erroEmail != null, supportingText = s.erroEmail?.let { { Text(it) } },
-                // Teclado com "@" e botão "próximo".
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
             )
             OutlinedTextField(
@@ -96,7 +95,6 @@ fun AuthScreen(viewModel: AuthViewModel) {
                     keyboardType = KeyboardType.Password,
                     imeAction = if (s.modoCadastro) ImeAction.Next else ImeAction.Done
                 ),
-                // "Done" no teclado já envia o login.
                 keyboardActions = KeyboardActions(onDone = { viewModel.enviar() })
             )
             if (s.modoCadastro) {

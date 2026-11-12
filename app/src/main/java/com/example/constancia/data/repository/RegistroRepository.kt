@@ -25,13 +25,7 @@ class RegistroRepository(private val registroDao: RegistroDiarioDao) {
 
     suspend fun excluir(registro: RegistroDiario) = registroDao.excluir(registro)
 
-    /**
-     * Soma `delta` (+1 ou -1) ao valor do dia, usando o CRUD:
-     * - não existe registro e delta > 0  → CREATE (valor 1)
-     * - existe e o novo valor > 0         → UPDATE
-     * - o novo valor chega a 0            → DELETE (dia volta a "não feito")
-     * Lê o valor atual do banco (e não da tela) para não usar um dado desatualizado.
-     */
+    /** Soma +1/-1 ao dia: sem registro → CREATE; valor > 0 → UPDATE; chegou a 0 → DELETE. */
     suspend fun ajustarValor(habitoId: Long, data: LocalDate, delta: Int) {
         val atual = registroDao.buscar(habitoId, data)
         val novoValor = (atual?.valor ?: 0) + delta

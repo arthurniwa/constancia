@@ -6,13 +6,8 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
 /**
- * Guarda senhas do jeito certo: nunca o texto, só um HASH lento e com SALT.
- * ≈ Rfc2898DeriveBytes / PasswordHasher do ASP.NET Identity (que também usa PBKDF2).
- *
- * - Hash: função de mão única. Dá para conferir uma senha, mas não dá para "desfazer" o hash.
- * - Salt: 16 bytes aleatórios por usuário. Duas pessoas com a senha "123456" ficam com hashes
- *   diferentes, e tabelas prontas de hashes (rainbow tables) não servem.
- * - Iterações: repete o cálculo milhares de vezes para deixar ataques de força bruta lentos.
+ * Senhas: nunca o texto, só um hash PBKDF2 (lento de propósito) com salt aleatório.
+ * Salt: mesma senha → hashes diferentes por usuário.
  */
 object SenhaHasher {
     private const val ITERACOES = 120_000
@@ -25,8 +20,7 @@ object SenhaHasher {
         return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
     }
 
-    /** Recalcula o hash da senha digitada com o MESMO salt e compara com o salvo. */
+    /** Recalcula o hash com o MESMO salt e compara com o salvo. */
     fun confere(senha: String, salt: ByteArray, hashSalvo: ByteArray): Boolean =
-        // isEqual compara em tempo constante (não "vaza" quantos bytes acertou).
         MessageDigest.isEqual(hash(senha, salt), hashSalvo)
 }

@@ -14,11 +14,10 @@ import com.example.constancia.ui.historico.HistoricoViewModel
 import com.example.constancia.ui.hoje.HojeViewModel
 
 /**
- * Fábrica de ViewModels: ensina o Android a criar cada ViewModel com suas dependências
- * (o repositório). Sem ela, o Android só sabe criar ViewModels com construtor vazio.
- * ≈ o container de DI resolvendo o construtor de um Controller.
+ * Fábrica de ViewModels: cria cada um passando os repositórios (como DI no .NET).
+ * Sem ela o Android só cria ViewModels com construtor vazio.
  */
-object AppViewModelProvider {   // `object` = singleton (≈ classe static)
+object AppViewModelProvider {   // `object` = singleton
     val Factory = viewModelFactory {
         initializer { AuthViewModel(app().container.authRepository) }
         initializer { HabitosViewModel(app().container.habitoRepository, usuarioLogado()) }
@@ -56,13 +55,10 @@ object AppViewModelProvider {   // `object` = singleton (≈ classe static)
     }
 }
 
-/**
- * Id do usuário logado. As telas de hábitos só existem depois do login
- * (ver RaizApp), então aqui ele nunca é null — `checkNotNull` deixa isso explícito.
- */
+/** Id do usuário logado; nunca é null aqui, pois essas telas só existem após o login. */
 private fun CreationExtras.usuarioLogado(): Long =
     checkNotNull(app().container.sessaoRepository.usuarioId.value) { "Nenhum usuário logado" }
 
-/** Pega a nossa classe Application de dentro do contexto de criação do ViewModel. */
+/** Pega a nossa Application (onde fica o container de repositórios). */
 private fun CreationExtras.app(): ConstanciaApplication =
     this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ConstanciaApplication

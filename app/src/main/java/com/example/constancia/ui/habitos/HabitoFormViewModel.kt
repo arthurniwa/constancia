@@ -16,7 +16,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
-/** Estado do formulário. A meta fica como texto porque o campo da tela é texto. */
+/** Estado do formulário (meta como texto, igual ao campo). */
 data class HabitoFormUiState(
     val id: Long = 0,
     val usuarioId: Long = 0,
@@ -36,8 +36,8 @@ data class HabitoFormUiState(
 }
 
 /**
- * Serve para CRIAR (id = 0) e EDITAR (id > 0).
- * SavedStateHandle traz os argumentos da navegação (≈ os parâmetros de rota `{id}` do ASP.NET).
+ * Mesmo form para criar (id = 0) e editar (id > 0).
+ * SavedStateHandle traz os argumentos da rota (id e sugestao).
  */
 class HabitoFormViewModel(
     savedStateHandle: SavedStateHandle,
@@ -49,17 +49,15 @@ class HabitoFormViewModel(
     private val sugestao: Int = savedStateHandle["sugestao"] ?: -1
 
     /**
-     * `mutableStateOf` = estado observável do Compose: quando muda, a tela redesenha.
-     * `by` delega o get/set (lê `uiState` em vez de `uiState.value`).
-     * `private set`: a tela lê, mas só o ViewModel altera.
-     * Como mora no ViewModel, o que o usuário digitou sobrevive à rotação.
+     * mutableStateOf: quando muda, a tela redesenha. Só o ViewModel altera (private set).
+     * Fica no ViewModel, então o que foi digitado sobrevive à rotação.
      */
     var uiState by mutableStateOf(HabitoFormUiState(usuarioId = usuarioId))
         private set
 
-    // `init` ≈ corpo do construtor. Roda uma vez só (não roda de novo ao girar a tela).
+    // Roda uma vez (não repete ao girar a tela).
     init {
-        // Veio de uma sugestão da tela Hoje? Já abre preenchido (o usuário ainda pode mudar tudo).
+        // Veio de uma sugestão da tela Hoje? Abre o form preenchido.
         SUGESTOES.getOrNull(sugestao)?.let { s ->
             if (habitoId == 0L) {
                 uiState = uiState.copy(nome = s.nome, icone = s.icone, cor = s.cor, dias = s.dias, metaTexto = s.meta?.toString() ?: "")
@@ -74,12 +72,12 @@ class HabitoFormViewModel(
         }
     }
 
-    // Eventos da tela. `copy(...)` cria uma cópia alterando só alguns campos (≈ `with { }` do record).
+    // Eventos da tela. copy() = cópia mudando só alguns campos.
     fun alterarNome(valor: String) { uiState = uiState.copy(nome = valor, erroNome = null) }
     fun alterarIcone(valor: String) { uiState = uiState.copy(icone = valor) }
     fun alterarCor(valor: Int) { uiState = uiState.copy(cor = valor) }
     fun alterarMeta(valor: String) {
-        // Aceita só dígitos (no máximo 4) — o filtro roda a cada tecla.
+        // Só dígitos, no máximo 4.
         if (valor.length <= 4 && valor.all { it.isDigit() }) {
             uiState = uiState.copy(metaTexto = valor, erroMeta = null)
         }
@@ -89,12 +87,12 @@ class HabitoFormViewModel(
         uiState = uiState.copy(dias = novos, erroDias = null)
     }
 
-    /** Valida os campos. Retorna true se está tudo certo. */
+    /** Validação fica no ViewModel. Retorna true se está tudo certo. */
     private fun validar(): Boolean {
         val nome = uiState.nome.trim()
-        val meta = uiState.metaTexto.toIntOrNull()   // toIntOrNull ≈ int.TryParse (null se falhar)
+        val meta = uiState.metaTexto.toIntOrNull()   // null se não for número
 
-        val erroNome = when {                        // `when` ≈ switch expression do C#
+        val erroNome = when {
             nome.isEmpty() -> "Informe um nome"
             nome.length > 40 -> "Máximo de 40 caracteres"
             else -> null
@@ -107,10 +105,7 @@ class HabitoFormViewModel(
         return erroNome == null && erroDias == null && erroMeta == null
     }
 
-    /**
-     * CREATE ou UPDATE do CRUD.
-     * `suspend` porque a tela espera terminar para voltar à lista.
-     */
+    /** CREATE ou UPDATE. `suspend`: a tela espera salvar antes de voltar. */
     suspend fun salvar(): Boolean {
         if (!validar()) return false
         val habito = uiState.paraHabito()
@@ -119,7 +114,7 @@ class HabitoFormViewModel(
     }
 }
 
-// Funções de extensão privadas para converter entre entidade e estado da tela (≈ um "mapper").
+// Converte entre entidade e estado da tela.
 private fun Habito.paraFormState() = HabitoFormUiState(
     id = id,
     usuarioId = usuarioId,

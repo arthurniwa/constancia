@@ -5,21 +5,15 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
-/**
- * O SQLite só guarda tipos simples (INTEGER, TEXT, REAL, BLOB).
- * TypeConverters ensinam o Room a converter tipos "ricos" ↔ tipos do banco.
- * ≈ ValueConverter do Entity Framework (HasConversion).
- */
+/** Ensina o Room a salvar tipos que o SQLite não conhece (datas, horas, dias da semana). */
 class Converters {
 
-    // LocalDate ↔ Long (dias desde 01/01/1970). Número ordena e compara bem no SQL.
+    // LocalDate ↔ Long (dias desde 1970)
     @TypeConverter
     fun localDateParaLong(data: LocalDate?): Long? = data?.toEpochDay()
-    // `data?.toEpochDay()`: safe call (≈ `data?.ToEpochDay()` do C#). Se data for null, resultado é null.
 
     @TypeConverter
     fun longParaLocalDate(valor: Long?): LocalDate? = valor?.let { LocalDate.ofEpochDay(it) }
-    // `let { ... }` executa o bloco só se não for null; `it` é o valor (lambda com 1 parâmetro).
 
     // LocalTime ↔ String "HH:mm"
     @TypeConverter
@@ -32,11 +26,9 @@ class Converters {
     @TypeConverter
     fun diasParaString(dias: Set<DayOfWeek>): String =
         dias.sorted().joinToString(",") { it.value.toString() }
-    // joinToString ≈ string.Join(",", dias.Select(d => ...)) do C#
 
     @TypeConverter
     fun stringParaDias(texto: String): Set<DayOfWeek> =
         if (texto.isBlank()) emptySet()
         else texto.split(",").map { DayOfWeek.of(it.toInt()) }.toSet()
-    // `if` em Kotlin é expressão (retorna valor) ≈ operador ternário `? :` do C#.
 }

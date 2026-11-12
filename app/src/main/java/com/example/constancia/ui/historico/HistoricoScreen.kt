@@ -71,8 +71,7 @@ fun HistoricoScreen(
     val mensagem by viewModel.mensagem.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
-    // LaunchedEffect: roda um efeito (coroutine) quando a chave `mensagem` muda.
-    // ≈ OnParametersSetAsync do Blazor reagindo a um parâmetro.
+    // LaunchedEffect: mostra o Snackbar quando `mensagem` muda.
     LaunchedEffect(mensagem) {
         mensagem?.let {
             snackbar.showSnackbar(it)
@@ -110,7 +109,7 @@ fun HistoricoScreen(
                 contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Topo da lista: estado da API de feriados (carregando / erro).
+                // Feriados da API: carregando / erro ("Tentar novamente").
                 when {
                     estado.carregandoFeriados -> item { CarregandoFeriados(Modifier.padding(vertical = 4.dp)) }
                     estado.erroFeriados != null -> item { ErroFeriados(estado.erroFeriados!!, viewModel::carregarFeriados) }
@@ -120,14 +119,14 @@ fun HistoricoScreen(
                         MensagemVazia("Nenhum registro ainda.\nMarque o hábito na tela Hoje ou toque em \"Registrar dia\".")
                     }
                 }
-                // key: "r" + id para registros e "f" + data para feriados (chaves nunca se repetem).
+                // Chave única: "r" + id (registro) ou "f" + data (feriado).
                 items(estado.itens, key = { item ->
                     when (item) {
                         is ItemHistorico.Registro -> "r${item.registro.id}"
                         is ItemHistorico.Feriado -> "f${item.data}"
                     }
                 }) { item ->
-                    // `is` ≈ pattern matching de tipo do C# (`item is Registro r`); o smart cast já converte.
+                    // Registro ou feriado (sealed interface).
                     when (item) {
                         is ItemHistorico.Registro -> ItemRegistro(
                             registro = item.registro,
@@ -143,7 +142,7 @@ fun HistoricoScreen(
         }
     }
 
-    // ----- Diálogos (todos controlados pelo estado do ViewModel) -----
+    // ----- Diálogos (estado no ViewModel: sobrevive à rotação) -----
 
     if (calendario != ModoCalendario.FECHADO) {
         CalendarioDialog(
@@ -153,8 +152,7 @@ fun HistoricoScreen(
         )
     }
 
-    // `val e = edicao` cria uma cópia local: o Kotlin consegue garantir que não é null dentro do if
-    // ("smart cast"). Com a propriedade delegada direto, ele não garante.
+    // Cópia local para o Kotlin saber que não é null dentro do if.
     val e = edicao
     if (e != null && calendario == ModoCalendario.FECHADO) {
         AlertDialog(
@@ -215,7 +213,7 @@ private fun ItemRegistro(
     }
 }
 
-/** Feriado sem registro: destacado com outra cor e sem botões (é informativo). */
+/** Feriado sem registro: destacado, só informativo. */
 @Composable
 private fun ItemFeriado(item: ItemHistorico.Feriado) {
     Card(
@@ -233,10 +231,7 @@ private fun ItemFeriado(item: ItemHistorico.Feriado) {
     }
 }
 
-/**
- * Calendário Material 3. O DatePicker trabalha com milissegundos em UTC,
- * então convertemos LocalDate ↔ millis usando o fuso UTC (ZoneOffset.UTC).
- */
+/** Calendário. O DatePicker usa millis em UTC, então convertemos com ZoneOffset.UTC. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarioDialog(
@@ -247,8 +242,7 @@ private fun CalendarioDialog(
     val hojeMillis = LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     val estado = rememberDatePickerState(
         initialSelectedDateMillis = dataInicial?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
-        // `object : Interface { }` = classe anônima (≈ implementar a interface inline).
-        // Bloqueia datas futuras: não dá para registrar um dia que ainda não aconteceu.
+        // Bloqueia datas futuras.
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= hojeMillis
         }

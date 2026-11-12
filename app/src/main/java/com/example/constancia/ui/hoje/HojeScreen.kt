@@ -55,10 +55,7 @@ import com.example.constancia.ui.util.Dica
 import com.example.constancia.ui.util.SUGESTOES
 import com.example.constancia.ui.util.Sugestao
 
-/**
- * Tela "Hoje" no estilo painel esportivo:
- * um medidor grande com o progresso do dia e, abaixo, um cartão por hábito com anel de progresso.
- */
+/** Tela "Hoje": medidor do dia, gráfico da semana, hábitos, dica e sugestões. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HojeScreen(
@@ -74,7 +71,7 @@ fun HojeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        // substringBefore(" "): só o primeiro nome ("Arthur Niwa" → "Arthur").
+                        // Só o primeiro nome.
                         Text("Olá, ${nomeUsuario.substringBefore(" ")}!", style = MaterialTheme.typography.titleLarge)
                         Text(
                             estado.data.formatoLongo(),
@@ -90,7 +87,7 @@ fun HojeScreen(
         val modifier = Modifier.padding(innerPadding).fillMaxSize()
         when {
             estado.carregando -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            // O painel aparece SEMPRE (mesmo sem hábitos): medidor, semana, dica e sugestões.
+            // O painel aparece sempre, mesmo sem hábitos.
             else -> LazyColumn(
                 modifier = modifier,
                 contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 24.dp),
@@ -138,7 +135,7 @@ fun HojeScreen(
                 if (estado.sugestoes.isNotEmpty()) {
                     item { TituloSecao("Sugestões para começar", Modifier.padding(top = 8.dp, start = 4.dp)) }
                     item {
-                        // LazyRow = lista horizontal com rolagem lateral (≈ um carrossel).
+                        // LazyRow = lista horizontal (carrossel).
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             items(estado.sugestoes) { indice ->
                                 CartaoSugestao(SUGESTOES[indice], onClick = { onCriarHabito(indice) })
@@ -151,7 +148,7 @@ fun HojeScreen(
     }
 }
 
-/** Cartão de destaque: medidor de 270° com "3/5" no centro e uma frase de status. */
+/** Medidor de 270° com "3/5" no centro e uma frase de status. */
 @Composable
 private fun ResumoDoDia(concluidos: Int, total: Int, temHabitos: Boolean, onCriar: () -> Unit) {
     val completo = total > 0 && concluidos == total
@@ -218,7 +215,7 @@ private fun ItemHoje(
 
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Anel na cor do hábito, com o emoji no centro: enche conforme o valor do dia.
+            // Anel na cor do hábito, com o emoji no centro.
             AnelProgresso(
                 progresso = item.valor.toFloat() / habito.alvoDiario,
                 cor = cor,
@@ -238,7 +235,7 @@ private fun ItemHoje(
                 Text(texto, style = MaterialTheme.typography.bodySmall, color = corTexto)
             }
             if (habito.meta == null) {
-                // Botão redondo que "acende" na cor do hábito quando marcado.
+                // Acende na cor do hábito quando marcado.
                 FilledIconToggleButton(
                     checked = item.concluido,
                     onCheckedChange = { onAlternar() },
@@ -250,7 +247,7 @@ private fun ItemHoje(
                     Icon(Icons.Default.Check, contentDescription = if (item.concluido) "Desmarcar" else "Marcar como feito")
                 }
             } else {
-                // O conjunto de ícones padrão não tem "menos", então usamos texto.
+                // Não há ícone de "menos" padrão: usamos texto.
                 FilledTonalIconButton(onClick = { onSomar(-1) }, enabled = item.valor > 0) {
                     Text("−", style = MaterialTheme.typography.titleLarge)
                 }
@@ -262,7 +259,7 @@ private fun ItemHoje(
     }
 }
 
-/** "Dica do dia": conteúdo fixo, troca com o botão "Outra dica". */
+/** Dica do dia; o botão "Outra dica" troca. */
 @Composable
 private fun CartaoDica(dica: Dica, onOutra: () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
@@ -281,7 +278,7 @@ private fun CartaoDica(dica: Dica, onOutra: () -> Unit) {
     }
 }
 
-/** Cartão do carrossel de sugestões: emoji, nome, meta e "Adicionar". */
+/** Cartão de sugestão no carrossel. */
 @Composable
 private fun CartaoSugestao(sugestao: Sugestao, onClick: () -> Unit) {
     Card(Modifier.width(150.dp).clickable(onClick = onClick)) {

@@ -34,9 +34,9 @@ data class HojeUiState(
     val existeAlgumHabito: Boolean = false,   // diferencia "não criou nada" de "nada para hoje"
     val itens: List<HabitoDoDia> = emptyList(),
     val feriadoHoje: String? = null,          // nome do feriado, se hoje for feriado nacional
-    val semana: List<DiaResumo> = emptyList(),// % de hábitos concluídos em cada um dos últimos 7 dias
+    val semana: List<DiaResumo> = emptyList(),// % concluído em cada um dos últimos 7 dias
     val dica: Dica = DICAS.first(),
-    val sugestoes: List<Int> = emptyList()    // índices em SUGESTOES ainda não criados pelo usuário
+    val sugestoes: List<Int> = emptyList()    // índices em SUGESTOES ainda não criados
 ) {
     val concluidos: Int get() = itens.count { it.concluido }
 }
@@ -51,31 +51,27 @@ class HojeViewModel(
     private val hoje: LocalDate = LocalDate.now()
     private val inicioSemana: LocalDate = hoje.minusDays(6)
 
-    // Se a API falhar aqui, simplesmente não mostramos o aviso (o erro aparece em Detalhes/Histórico).
+    // Se a API falhar, só não mostramos o aviso de feriado.
     private val feriadoHoje = MutableStateFlow<String?>(null)
 
-    // Dica do dia: começa por uma escolhida pelo dia do ano (muda sozinha a cada dia).
-    // Fica no ViewModel, então "Outra dica" sobrevive à rotação.
+    // Dica escolhida pelo dia do ano; fica no ViewModel para sobreviver à rotação.
     private val indiceDica = MutableStateFlow(hoje.dayOfYear % DICAS.size)
 
     init {
         viewModelScope.launch {
             val r = feriadoRepository.buscar(setOf(hoje.year))
-            if (r is ResultadoFeriados.Sucesso) feriadoHoje.value = r.feriados[hoje]   // `is` faz smart cast
+            if (r is ResultadoFeriados.Sucesso) feriadoHoje.value = r.feriados[hoje]
         }
     }
 
-    /**
-     * `combine` junta vários Flows: sempre que QUALQUER um emitir (mudou um hábito, um registro,
-     * o feriado ou a dica), recalcula o estado da tela. ≈ CombineLatest do Rx.
-     */
+    /** combine: recalcula a tela quando qualquer Flow muda (≈ CombineLatest). */
     val uiState: StateFlow<HojeUiState> = combine(
         habitoRepository.observarDoUsuario(usuarioId),
-        registroRepository.observarDoUsuarioEntre(usuarioId, inicioSemana, hoje),
+        registroRepository.observarDoUsuarioEntre(usuarioId, inicioSemana, hoje),   // consulta INNER JOIN
         feriadoHoje,
         indiceDica
     ) { habitos, registrosSemana, feriado, dica ->
-        // associateBy cria um Map habitoId → registro (≈ ToDictionary do LINQ) para busca rápida.
+        // Map habitoId → registro de hoje.
         val registroDeHojePorHabito = registrosSemana.filter { it.data == hoje }.associateBy { it.habitoId }
         val nomesCriados = habitos.map { it.nome.lowercase() }.toSet()
         HojeUiState(
@@ -83,30 +79,26 @@ class HojeViewModel(
             data = hoje,
             existeAlgumHabito = habitos.isNotEmpty(),
             itens = habitos
-                .filter { it.programadoPara(hoje) }                              // ≈ .Where(...)
-                .map { HabitoDoDia(it, registroDeHojePorHabito[it.id]) },        // ≈ .Select(...)
+                .filter { it.programadoPara(hoje) }
+                .map { HabitoDoDia(it, registroDeHojePorHabito[it.id]) },
             feriadoHoje = feriado,
             semana = resumoDaSemana(habitos, registrosSemana),
             dica = DICAS[dica],
-            // `indices` = 0..size-1. Esconde as sugestões que o usuário já criou (mesmo nome).
+            // Esconde sugestões que o usuário já criou (mesmo nome).
             sugestoes = SUGESTOES.indices.filter { SUGESTOES[it].nome.lowercase() !in nomesCriados }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HojeUiState())
 
-    /**
-     * Para cada um dos últimos 7 dias: quantos hábitos estavam programados e quantos foram concluídos.
-     * Usa a MESMA regra da sequência (CalculadoraSequencia.estadoDoDia).
-     * Sem hábitos, todas as barras ficam vazias — o gráfico aparece mesmo assim.
-     */
+    /** % concluído nos últimos 7 dias, com a mesma regra da sequência (estadoDoDia). */
     private fun resumoDaSemana(habitos: List<Habito>, registros: List<RegistroDiario>): List<DiaResumo> {
-        val porHabito = registros.groupBy { it.habitoId }   // ≈ GroupBy do LINQ
+        val porHabito = registros.groupBy { it.habitoId }
         return generateSequence(inicioSemana) { it.plusDays(1) }.takeWhile { !it.isAfter(hoje) }.map { dia ->
             val estados = habitos.map { h ->
                 val regs = porHabito[h.id].orEmpty()
                 val valor = regs.firstOrNull { it.data == dia }?.valor ?: 0
                 CalculadoraSequencia.estadoDoDia(h, valor, dia, emptySet(), hoje, CalculadoraSequencia.inicio(h, regs))
             }
-            // Conta só os dias em que o hábito "valia": concluído, pendente ou falha.
+            // Conta só os hábitos que valiam naquele dia.
             val contam = estados.filter {
                 it == EstadoDia.CONCLUIDO || it == EstadoDia.FALHA || it == EstadoDia.PARCIAL || it == EstadoDia.HOJE_PENDENTE
             }

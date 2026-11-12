@@ -2,13 +2,10 @@ package com.example.constancia.ui.util
 
 import java.time.DayOfWeek
 
-/** Uma dica de bem-estar mostrada no card "Dica do dia". */
+/** Dica mostrada no card "Dica do dia". */
 data class Dica(val emoji: String, val titulo: String, val texto: String)
 
-/**
- * Dicas gerais de hábitos saudáveis (conteúdo fixo do app, não vem de API).
- * São recomendações gerais de bem-estar, não orientação médica.
- */
+/** Dicas fixas de bem-estar geral (não é orientação médica). */
 val DICAS = listOf(
     Dica("💧", "Comece o dia com água", "Deixe um copo ou garrafa perto da cama e beba logo ao acordar. Amarrar o hábito a algo que você já faz facilita lembrar."),
     Dica("🚶", "Caminhe depois das refeições", "Uma caminhada leve de 10 a 15 minutos depois do almoço ou do jantar ajuda a se mexer mais sem precisar de academia."),
@@ -25,7 +22,7 @@ val DICAS = listOf(
     Dica("🔥", "Não quebre a corrente", "Se falhar um dia, volte no dia seguinte. Uma falha não apaga o progresso; duas seguidas começam um novo hábito ruim.")
 )
 
-/** Hábito pronto para o usuário adicionar com um toque (abre o formulário já preenchido). */
+/** Hábito pronto: abre o formulário já preenchido. */
 data class Sugestao(
     val nome: String,
     val icone: String,

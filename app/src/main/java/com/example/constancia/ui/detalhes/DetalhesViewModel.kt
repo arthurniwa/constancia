@@ -26,9 +26,9 @@ data class DetalhesUiState(
     val estatisticas: Estatisticas = Estatisticas(0, 0, 0),
     val carregandoFeriados: Boolean = true,
     val erroFeriados: String? = null,
-    val proximoFeriado: Pair<LocalDate, String>? = null,   // Pair ≈ tupla (data, nome)
-    val semana: List<DiaResumo> = emptyList(),   // últimos 7 dias (gráfico de barras)
-    val mes: List<DiaResumo> = emptyList()       // todos os dias do mês atual (mapa)
+    val proximoFeriado: Pair<LocalDate, String>? = null,   // (data, nome)
+    val semana: List<DiaResumo> = emptyList(),   // últimos 7 dias (barras)
+    val mes: List<DiaResumo> = emptyList()       // dias do mês atual (mapa)
 )
 
 class DetalhesViewModel(
@@ -41,12 +41,12 @@ class DetalhesViewModel(
     private val habitoId: Long = checkNotNull(savedStateHandle["habitoId"])
     private val hoje = LocalDate.now()
 
-    // null = carregando; Sucesso/Erro = resposta da API.
+    // Feriados: null = carregando; Sucesso ou Erro = resposta da API.
     private val feriados = MutableStateFlow<ResultadoFeriados?>(null)
 
     init { carregarFeriados() }
 
-    /** Busca na BrasilAPI o ano anterior, o atual e o próximo. Também usado pelo botão "Tentar novamente". */
+    /** Busca feriados na BrasilAPI; também usado por "Tentar novamente". */
     fun carregarFeriados() {
         viewModelScope.launch {
             feriados.value = null
@@ -54,13 +54,13 @@ class DetalhesViewModel(
         }
     }
 
-    /** Hábito + registros + feriados → estatísticas recalculadas sempre que qualquer um mudar. */
+    /** combine: recalcula as estatísticas quando hábito, registros ou feriados mudam. */
     val uiState: StateFlow<DetalhesUiState> = combine(
         habitoRepository.observarPorId(habitoId),
         registroRepository.observarPorHabito(habitoId),
         feriados
     ) { habito, registros, resultado ->
-        // `as?` = cast seguro (≈ `as` do C#): vira null se não for Sucesso.
+        // `as?`: vira null se não for Sucesso.
         val mapa = (resultado as? ResultadoFeriados.Sucesso)?.feriados.orEmpty()
         DetalhesUiState(
             carregando = false,
@@ -70,7 +70,7 @@ class DetalhesViewModel(
             carregandoFeriados = resultado == null,
             erroFeriados = (resultado as? ResultadoFeriados.Erro)?.mensagem,
             proximoFeriado = mapa.filterKeys { it.isAfter(hoje) }.minByOrNull { it.key }?.toPair(),
-            // Mesma regra da sequência, dia a dia, para os gráficos.
+            // Gráficos usam a mesma regra da sequência.
             semana = habito?.let {
                 CalculadoraSequencia.resumir(it, registros, hoje.minusDays(6), hoje, mapa.keys, hoje)
             }.orEmpty(),
@@ -82,22 +82,23 @@ class DetalhesViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetalhesUiState())
 
+    // Estado do diálogo no ViewModel: sobrevive à rotação.
     private val _confirmandoExclusao = MutableStateFlow(false)
     val confirmandoExclusao = _confirmandoExclusao.asStateFlow()
     fun pedirExclusao() { _confirmandoExclusao.value = true }
     fun cancelarExclusao() { _confirmandoExclusao.value = false }
 
-    /** DELETE do hábito (os registros vão junto pelo CASCADE). A tela volta depois que terminar. */
+    /** DELETE do hábito; os registros vão junto (CASCADE). */
     suspend fun excluir() {
         _confirmandoExclusao.value = false
         uiState.value.habito?.let { habitoRepository.excluir(it) }
     }
 }
 
-/** Texto enviado para o WhatsApp/outro app. Fica fora da tela para ser fácil de testar e explicar. */
+/** Texto do compartilhamento (requisito 5). */
 fun textoCompartilhamento(habito: Habito, e: Estatisticas): String {
     fun dias(n: Int) = if (n == 1) "1 dia" else "$n dias"
-    return buildString {   // ≈ StringBuilder do C#
+    return buildString {
         appendLine("${habito.icone} Hábito: ${habito.nome}")
         appendLine("🔥 Sequência atual: ${dias(e.sequenciaAtual)}")
         appendLine("🏆 Recorde: ${dias(e.recorde)}")

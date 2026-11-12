@@ -92,6 +92,7 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 - **`detalhes/`**: estatísticas + próximo feriado + compartilhar + excluir.
 - **`historico/`**: lista misturando registros e feriados (`sealed interface ItemHistorico`), calendário (`DatePickerDialog`), diálogos de editar/excluir, Snackbar.
 - **`componentes/Graficos.kt`**: `AnelProgresso` (desenhado com `Canvas` + `drawArc`, animado com `animateFloatAsState`), `CartaoMetrica`, `GraficoSemana` (barras feitas só com `Box` e `fillMaxHeight(fração)`) e `MapaMes` (grade de 7 colunas com `chunked(7)`).
+- **`hoje/`** (painel): medidor do dia e gráfico **"Sua semana"** aparecem sempre, mesmo sem hábitos; **Dica do dia** (lista fixa em `util/Sugestoes.kt`, escolhida pelo dia do ano) e **Sugestões** que abrem o formulário pré-preenchido (rota `habito_form?id=0&sugestao=N`).
 - **`theme/`**: tema escuro próprio (`darkColorScheme` com cores fixas, sem as cores automáticas do Android), fonte condensada para números (`EstiloNumero`) e rótulos em maiúsculas (`EstiloRotulo`).
 - **`util/`**: emojis/cores, formatação de datas em pt-BR, componentes de "carregando/erro de feriados".
 
@@ -172,6 +173,9 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 41. **Como o gráfico de barras foi feito sem biblioteca?** Cada dia é uma `Box` cinza de altura fixa com outra `Box` dentro usando `fillMaxHeight(fração)`, alinhada embaixo.
 42. **Como o tema funciona?** `MaterialTheme(colorScheme = ...)` distribui as cores para todos os componentes (como variáveis CSS globais). O app é sempre escuro; `SystemBarStyle.dark` deixa os ícones da barra de status claros.
 43. **Por que os gráficos não recalculam a regra da sequência por conta própria?** Usam `CalculadoraSequencia.estadoDoDia`, a mesma função da sequência. Uma regra só, testada uma vez: o gráfico nunca contradiz o número.
+
+44. **Como o gráfico "Sua semana" busca os registros de todos os hábitos do usuário?** Com uma consulta com `INNER JOIN`: `registros_diarios` não tem `usuarioId`, então junto com `habitos` e filtro por `h.usuarioId` e `r.data BETWEEN :de AND :ate` (`RegistroDiarioDao.observarDoUsuarioEntre`).
+45. **De onde vêm as dicas e as sugestões?** São listas fixas no app (`Sugestoes.kt`), não de API. A dica muda sozinha a cada dia (`dayOfYear % tamanho`) e o índice fica no ViewModel, então "Outra dica" sobrevive à rotação. Tocar numa sugestão navega com o índice na rota, e o `HabitoFormViewModel` lê do `SavedStateHandle` e preenche o formulário.
 
 ### Compartilhamento
 26. **Como funciona o compartilhar?** `Intent(ACTION_SEND)` com `type = "text/plain"` e `EXTRA_TEXT`; `createChooser` mostra a lista de apps que aceitam texto.

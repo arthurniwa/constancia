@@ -34,8 +34,9 @@ import com.example.constancia.ui.hoje.HojeScreen
 object Rotas {
     const val HOJE = "hoje"
     const val HABITOS = "habitos"
-    const val HABITO_FORM = "habito_form?id={id}"          // id opcional: sem id = criar
-    fun habitoForm(id: Long = 0L) = "habito_form?id=$id"   // "$id" = interpolação (≈ $"...{id}")
+    // id opcional (0 = criar); sugestao opcional (-1 = nenhuma; senão índice em SUGESTOES).
+    const val HABITO_FORM = "habito_form?id={id}&sugestao={sugestao}"
+    fun habitoForm(id: Long = 0L, sugestao: Int = -1) = "habito_form?id=$id&sugestao=$sugestao"   // "$id" = interpolação (≈ $"...{id}")
     const val HISTORICO = "historico/{habitoId}"           // id obrigatório (faz parte do caminho)
     fun historico(habitoId: Long) = "historico/$habitoId"
     const val DETALHES = "detalhes/{habitoId}"
@@ -93,7 +94,9 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
             composable(Rotas.HOJE) {
                 HojeScreen(
                     nomeUsuario = nomeUsuario,
-                    onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) }
+                    onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) },
+                    // `?:` troca null por -1 ("sem sugestão").
+                    onCriarHabito = { sugestao -> navController.navigate(Rotas.habitoForm(sugestao = sugestao ?: -1)) }
                 )
             }
 
@@ -109,7 +112,10 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
             composable(
                 route = Rotas.HABITO_FORM,
                 // Declara o argumento {id}: tipo Long, padrão 0 (= novo hábito).
-                arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = 0L })
+                arguments = listOf(
+                    navArgument("id") { type = NavType.LongType; defaultValue = 0L },
+                    navArgument("sugestao") { type = NavType.IntType; defaultValue = -1 }
+                )
             ) {
                 HabitoFormScreen(onVoltar = { navController.popBackStack() })  // volta para a tela anterior
             }

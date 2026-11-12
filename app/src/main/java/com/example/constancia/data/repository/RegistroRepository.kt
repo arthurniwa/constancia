@@ -13,6 +13,9 @@ class RegistroRepository(private val registroDao: RegistroDiarioDao) {
     fun observarPorData(data: LocalDate): Flow<List<RegistroDiario>> =
         registroDao.observarPorData(data)
 
+    fun observarDoUsuarioEntre(usuarioId: Long, de: LocalDate, ate: LocalDate): Flow<List<RegistroDiario>> =
+        registroDao.observarDoUsuarioEntre(usuarioId, de, ate)
+
     suspend fun buscar(habitoId: Long, data: LocalDate): RegistroDiario? =
         registroDao.buscar(habitoId, data)
 

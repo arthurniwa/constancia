@@ -10,6 +10,7 @@ import com.example.constancia.data.local.Habito
 import com.example.constancia.data.repository.HabitoRepository
 import com.example.constancia.ui.util.OPCOES_COR
 import com.example.constancia.ui.util.OPCOES_ICONE
+import com.example.constancia.ui.util.SUGESTOES
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -45,6 +46,7 @@ class HabitoFormViewModel(
 ) : ViewModel() {
 
     private val habitoId: Long = savedStateHandle["id"] ?: 0L
+    private val sugestao: Int = savedStateHandle["sugestao"] ?: -1
 
     /**
      * `mutableStateOf` = estado observável do Compose: quando muda, a tela redesenha.
@@ -57,6 +59,12 @@ class HabitoFormViewModel(
 
     // `init` ≈ corpo do construtor. Roda uma vez só (não roda de novo ao girar a tela).
     init {
+        // Veio de uma sugestão da tela Hoje? Já abre preenchido (o usuário ainda pode mudar tudo).
+        SUGESTOES.getOrNull(sugestao)?.let { s ->
+            if (habitoId == 0L) {
+                uiState = uiState.copy(nome = s.nome, icone = s.icone, cor = s.cor, dias = s.dias, metaTexto = s.meta?.toString() ?: "")
+            }
+        }
         if (habitoId != 0L) {
             uiState = uiState.copy(carregando = true)
             viewModelScope.launch {

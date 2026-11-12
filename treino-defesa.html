@@ -339,6 +339,14 @@ const PERGUNTAS = [
     d: "Quantas regras de \"dia feito / falha / neutro\" existem no código?",
     r: "Não. Os gráficos usam <code>CalculadoraSequencia.estadoDoDia</code>, a mesma função que calcula a sequência. É uma regra só, testada uma vez.",
     a: "domain/CalculadoraSequencia.kt" }
+  { t: "Visual", q: "Como o gráfico \"Sua semana\" da tela Hoje pega os registros de todos os hábitos do usuário?",
+    d: "A tabela de registros não sabe quem é o dono. Quem sabe?",
+    r: "Com uma consulta com <code>INNER JOIN</code>: <code>registros_diarios</code> não tem <code>usuarioId</code>, então junto com <code>habitos</code> e filtro <code>h.usuarioId = :usuarioId AND r.data BETWEEN :de AND :ate</code>. Para cada dia, o ViewModel calcula a % de hábitos concluídos com a mesma regra da sequência.",
+    a: "RegistroDiarioDao.kt → observarDoUsuarioEntre · HojeViewModel.kt" },
+  { t: "Visual", q: "Como funcionam a dica do dia e as sugestões de hábitos?",
+    d: "Lista fixa no app; índice na rota de navegação.",
+    r: "São listas fixas em <code>Sugestoes.kt</code> (não vêm de API). A dica é escolhida por <code>dayOfYear % tamanho</code> e o índice fica no ViewModel, então \"Outra dica\" sobrevive à rotação. Tocar numa sugestão navega para <code>habito_form?id=0&amp;sugestao=N</code>; o <code>HabitoFormViewModel</code> lê o índice do <code>SavedStateHandle</code> e preenche o formulário.",
+    a: "ui/util/Sugestoes.kt · HabitoFormViewModel.kt" }
 ];
 
 const TEMAS = ["Todos", "Room", "ViewModel", "Compose", "Visual", "API", "Compartilhar", "Sequência", "Login"];

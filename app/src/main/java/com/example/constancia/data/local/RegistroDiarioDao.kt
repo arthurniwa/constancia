@@ -28,6 +28,17 @@ interface RegistroDiarioDao {
     @Query("SELECT * FROM registros_diarios WHERE data = :data")
     fun observarPorData(data: LocalDate): Flow<List<RegistroDiario>>
 
+    // Registros de TODOS os hábitos de um usuário num intervalo de datas (gráfico "Sua semana").
+    // INNER JOIN: registros_diarios não tem usuarioId; quem sabe o dono é a tabela habitos.
+    @Query(
+        """
+        SELECT r.* FROM registros_diarios r
+        INNER JOIN habitos h ON h.id = r.habitoId
+        WHERE h.usuarioId = :usuarioId AND r.data BETWEEN :de AND :ate
+        """
+    )
+    fun observarDoUsuarioEntre(usuarioId: Long, de: LocalDate, ate: LocalDate): Flow<List<RegistroDiario>>
+
     @Query("SELECT * FROM registros_diarios WHERE habitoId = :habitoId AND data = :data")
     suspend fun buscar(habitoId: Long, data: LocalDate): RegistroDiario?
 

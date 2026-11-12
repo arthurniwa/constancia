@@ -41,11 +41,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.constancia.ui.AppViewModelProvider
 import com.example.constancia.ui.componentes.AnelProgresso
 import com.example.constancia.ui.componentes.TituloSecao
-import com.example.constancia.ui.habitos.MensagemVazia
 import com.example.constancia.ui.theme.EstiloNumero
 import com.example.constancia.ui.theme.EstiloRotulo
 import com.example.constancia.ui.theme.Verde
 import com.example.constancia.ui.util.formatoLongo
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import com.example.constancia.ui.componentes.GraficoSemana
+import com.example.constancia.ui.theme.Ambar
+import com.example.constancia.ui.util.Dica
+import com.example.constancia.ui.util.SUGESTOES
+import com.example.constancia.ui.util.Sugestao
 
 /**
  * Tela "Hoje" no estilo painel esportivo:
@@ -56,6 +64,7 @@ import com.example.constancia.ui.util.formatoLongo
 fun HojeScreen(
     nomeUsuario: String,
     onAbrir: (Long) -> Unit,
+    onCriarHabito: (sugestao: Int?) -> Unit,   // null = formulário vazio; número = sugestão pré-preenchida
     viewModel: HojeViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val estado by viewModel.uiState.collectAsState()
@@ -81,10 +90,7 @@ fun HojeScreen(
         val modifier = Modifier.padding(innerPadding).fillMaxSize()
         when {
             estado.carregando -> Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            !estado.existeAlgumHabito -> MensagemVazia(
-                "Nenhum hábito cadastrado.\nCrie o primeiro na aba Hábitos.", modifier
-            )
-            estado.itens.isEmpty() -> MensagemVazia("Nenhum hábito programado para hoje. Aproveite o descanso! 🌿", modifier)
+            // O painel aparece SEMPRE (mesmo sem hábitos): medidor, semana, dica e sugestões.
             else -> LazyColumn(
                 modifier = modifier,
                 contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 24.dp),
@@ -101,15 +107,44 @@ fun HojeScreen(
                         }
                     }
                 }
-                item { ResumoDoDia(concluidos = estado.concluidos, total = estado.itens.size) }
-                item { TituloSecao("Hábitos de hoje", Modifier.padding(top = 8.dp, start = 4.dp)) }
-                items(estado.itens, key = { it.habito.id }) { item ->
-                    ItemHoje(
-                        item = item,
-                        onClick = { onAbrir(item.habito.id) },
-                        onAlternar = { viewModel.alternar(item) },
-                        onSomar = { delta -> viewModel.somar(item, delta) }
+                item {
+                    ResumoDoDia(
+                        concluidos = estado.concluidos,
+                        total = estado.itens.size,
+                        temHabitos = estado.existeAlgumHabito,
+                        onCriar = { onCriarHabito(null) }
                     )
+                }
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            TituloSecao("Sua semana · % de hábitos concluídos")
+                            GraficoSemana(estado.semana, MaterialTheme.colorScheme.primary, estado.data)
+                        }
+                    }
+                }
+                if (estado.itens.isNotEmpty()) {
+                    item { TituloSecao("Hábitos de hoje", Modifier.padding(top = 8.dp, start = 4.dp)) }
+                    items(estado.itens, key = { it.habito.id }) { item ->
+                        ItemHoje(
+                            item = item,
+                            onClick = { onAbrir(item.habito.id) },
+                            onAlternar = { viewModel.alternar(item) },
+                            onSomar = { delta -> viewModel.somar(item, delta) }
+                        )
+                    }
+                }
+                item { CartaoDica(estado.dica, onOutra = viewModel::proximaDica) }
+                if (estado.sugestoes.isNotEmpty()) {
+                    item { TituloSecao("Sugestões para começar", Modifier.padding(top = 8.dp, start = 4.dp)) }
+                    item {
+                        // LazyRow = lista horizontal com rolagem lateral (≈ um carrossel).
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            items(estado.sugestoes) { indice ->
+                                CartaoSugestao(SUGESTOES[indice], onClick = { onCriarHabito(indice) })
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -118,8 +153,8 @@ fun HojeScreen(
 
 /** Cartão de destaque: medidor de 270° com "3/5" no centro e uma frase de status. */
 @Composable
-private fun ResumoDoDia(concluidos: Int, total: Int) {
-    val completo = concluidos == total
+private fun ResumoDoDia(concluidos: Int, total: Int, temHabitos: Boolean, onCriar: () -> Unit) {
+    val completo = total > 0 && concluidos == total
     val cor = if (completo) Verde else MaterialTheme.colorScheme.primary
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -140,17 +175,32 @@ private fun ResumoDoDia(concluidos: Int, total: Int) {
                 Text("PROGRESSO DO DIA", style = EstiloRotulo, color = cor)
                 Text(
                     when {
+                        !temHabitos -> "Seu painel começa aqui."
+                        total == 0 -> "Nenhum hábito hoje. Dia de descanso 🌿"
                         completo -> "Dia completo! 🎉"
                         total - concluidos == 1 -> "Falta 1 hábito para fechar o dia."
                         else -> "Faltam ${total - concluidos} hábitos para fechar o dia."
                     },
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(
-                    "${(concluidos * 100) / maxOf(total, 1)}% concluído",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (temHabitos) {
+                    Text(
+                        "${(concluidos * 100) / maxOf(total, 1)}% concluído",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        "Crie um hábito ou escolha uma sugestão abaixo. O medidor e o gráfico enchem conforme você marca.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(onClick = onCriar) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Criar hábito")
+                    }
+                }
             }
         }
     }
@@ -208,6 +258,44 @@ private fun ItemHoje(
                     Text("+", style = MaterialTheme.typography.titleLarge)
                 }
             }
+        }
+    }
+}
+
+/** "Dica do dia": conteúdo fixo, troca com o botão "Outra dica". */
+@Composable
+private fun CartaoDica(dica: Dica, onOutra: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("DICA DO DIA", style = EstiloRotulo, color = Ambar)
+            Row(verticalAlignment = Alignment.Top) {
+                Text(dica.emoji, style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(dica.titulo, style = MaterialTheme.typography.titleMedium)
+                    Text(dica.texto, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            TextButton(onClick = onOutra, modifier = Modifier.align(Alignment.End)) { Text("Outra dica") }
+        }
+    }
+}
+
+/** Cartão do carrossel de sugestões: emoji, nome, meta e "Adicionar". */
+@Composable
+private fun CartaoSugestao(sugestao: Sugestao, onClick: () -> Unit) {
+    Card(Modifier.width(150.dp).clickable(onClick = onClick)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            AnelProgresso(progresso = 0f, cor = Color(sugestao.cor), espessura = 4.dp, modifier = Modifier.size(44.dp)) {
+                Text(sugestao.icone, style = MaterialTheme.typography.titleMedium)
+            }
+            Text(sugestao.nome, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                sugestao.meta?.let { "$it ${sugestao.unidade} por dia" } ?: "Feito / não feito",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text("+ Adicionar", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

@@ -10,35 +10,47 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.constancia.ui.AppViewModelProvider
-import com.example.constancia.ui.habitos.IconeHabito
+import com.example.constancia.ui.componentes.AnelProgresso
+import com.example.constancia.ui.componentes.TituloSecao
 import com.example.constancia.ui.habitos.MensagemVazia
+import com.example.constancia.ui.theme.EstiloNumero
+import com.example.constancia.ui.theme.EstiloRotulo
+import com.example.constancia.ui.theme.Verde
 import com.example.constancia.ui.util.formatoLongo
 
+/**
+ * Tela "Hoje" no estilo painel esportivo:
+ * um medidor grande com o progresso do dia e, abaixo, um cartão por hábito com anel de progresso.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HojeScreen(
@@ -50,13 +62,20 @@ fun HojeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Column {
-                    // substringBefore(" "): só o primeiro nome ("Arthur Niwa" → "Arthur").
-                    Text("Olá, ${nomeUsuario.substringBefore(" ")}!")
-                    Text(estado.data.formatoLongo(), style = MaterialTheme.typography.bodyMedium)
-                }
-            })
+            TopAppBar(
+                title = {
+                    Column {
+                        // substringBefore(" "): só o primeiro nome ("Arthur Niwa" → "Arthur").
+                        Text("Olá, ${nomeUsuario.substringBefore(" ")}!", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            estado.data.formatoLongo(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+            )
         }
     ) { innerPadding ->
         val modifier = Modifier.padding(innerPadding).fillMaxSize()
@@ -68,28 +87,22 @@ fun HojeScreen(
             estado.itens.isEmpty() -> MensagemVazia("Nenhum hábito programado para hoje. Aproveite o descanso! 🌿", modifier)
             else -> LazyColumn(
                 modifier = modifier,
-                contentPadding = PaddingValues(16.dp, 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // `item { }` = um elemento avulso no topo da lista; `items(...)` = a lista em si.
                 estado.feriadoHoje?.let { nome ->
                     item {
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
                             Text(
                                 "🎉 Hoje é feriado ($nome). Se descansar, sua sequência não quebra.",
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(14.dp),
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         }
                     }
                 }
-                item {
-                    Text(
-                        "${estado.concluidos} de ${estado.itens.size} concluídos",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
+                item { ResumoDoDia(concluidos = estado.concluidos, total = estado.itens.size) }
+                item { TituloSecao("Hábitos de hoje", Modifier.padding(top = 8.dp, start = 4.dp)) }
                 items(estado.itens, key = { it.habito.id }) { item ->
                     ItemHoje(
                         item = item,
@@ -103,6 +116,46 @@ fun HojeScreen(
     }
 }
 
+/** Cartão de destaque: medidor de 270° com "3/5" no centro e uma frase de status. */
+@Composable
+private fun ResumoDoDia(concluidos: Int, total: Int) {
+    val completo = concluidos == total
+    val cor = if (completo) Verde else MaterialTheme.colorScheme.primary
+    Card(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            AnelProgresso(
+                progresso = if (total == 0) 0f else concluidos.toFloat() / total,
+                cor = cor,
+                espessura = 12.dp,
+                arco = 270f,
+                modifier = Modifier.size(128.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$concluidos/$total", style = EstiloNumero.gigante)
+                    Text("hábitos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.width(20.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("PROGRESSO DO DIA", style = EstiloRotulo, color = cor)
+                Text(
+                    when {
+                        completo -> "Dia completo! 🎉"
+                        total - concluidos == 1 -> "Falta 1 hábito para fechar o dia."
+                        else -> "Faltam ${total - concluidos} hábitos para fechar o dia."
+                    },
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    "${(concluidos * 100) / maxOf(total, 1)}% concluído",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ItemHoje(
     item: HabitoDoDia,
@@ -111,35 +164,41 @@ private fun ItemHoje(
     onSomar: (Int) -> Unit
 ) {
     val habito = item.habito
-    // Cartão fica levemente colorido quando o hábito está concluído.
-    val cores = if (item.concluido)
-        CardDefaults.cardColors(containerColor = Color(habito.cor).copy(alpha = 0.18f))
-    else CardDefaults.cardColors()
+    val cor = Color(habito.cor)
 
-    Card(colors = cores, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconeHabito(habito.icone, habito.cor)
-            Spacer(Modifier.width(12.dp))
+            // Anel na cor do hábito, com o emoji no centro: enche conforme o valor do dia.
+            AnelProgresso(
+                progresso = item.valor.toFloat() / habito.alvoDiario,
+                cor = cor,
+                espessura = 5.dp,
+                modifier = Modifier.size(54.dp)
+            ) {
+                Text(habito.icone, style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    habito.nome,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (item.concluido && habito.meta == null) TextDecoration.LineThrough else null
-                )
-                if (habito.meta != null) {
-                    Text("${item.valor} de ${habito.meta}", style = MaterialTheme.typography.bodySmall)
-                    // progress é uma lambda: o Compose só relê o valor na hora de desenhar.
-                    LinearProgressIndicator(
-                        progress = { (item.valor.toFloat() / habito.alvoDiario).coerceAtMost(1f) },
-                        color = Color(habito.cor),
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp, end = 8.dp)
-                    )
+                Text(habito.nome, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val (texto, corTexto) = when {
+                    item.concluido -> "Concluído" to Verde
+                    habito.meta != null -> "${item.valor} de ${habito.meta}" to MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> "Pendente" to MaterialTheme.colorScheme.onSurfaceVariant
                 }
+                Text(texto, style = MaterialTheme.typography.bodySmall, color = corTexto)
             }
             if (habito.meta == null) {
-                Checkbox(checked = item.concluido, onCheckedChange = { onAlternar() })
+                // Botão redondo que "acende" na cor do hábito quando marcado.
+                FilledIconToggleButton(
+                    checked = item.concluido,
+                    onCheckedChange = { onAlternar() },
+                    colors = IconButtonDefaults.filledIconToggleButtonColors(
+                        checkedContainerColor = cor,
+                        checkedContentColor = Color.Black
+                    )
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = if (item.concluido) "Desmarcar" else "Marcar como feito")
+                }
             } else {
                 // O conjunto de ícones padrão não tem "menos", então usamos texto.
                 FilledTonalIconButton(onClick = { onSomar(-1) }, enabled = item.valor > 0) {

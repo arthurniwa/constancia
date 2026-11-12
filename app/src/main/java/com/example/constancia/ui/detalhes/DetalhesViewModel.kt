@@ -9,6 +9,7 @@ import com.example.constancia.data.repository.HabitoRepository
 import com.example.constancia.data.repository.RegistroRepository
 import com.example.constancia.data.repository.ResultadoFeriados
 import com.example.constancia.domain.CalculadoraSequencia
+import com.example.constancia.domain.DiaResumo
 import com.example.constancia.domain.Estatisticas
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +26,9 @@ data class DetalhesUiState(
     val estatisticas: Estatisticas = Estatisticas(0, 0, 0),
     val carregandoFeriados: Boolean = true,
     val erroFeriados: String? = null,
-    val proximoFeriado: Pair<LocalDate, String>? = null   // Pair ≈ tupla (data, nome)
+    val proximoFeriado: Pair<LocalDate, String>? = null,   // Pair ≈ tupla (data, nome)
+    val semana: List<DiaResumo> = emptyList(),   // últimos 7 dias (gráfico de barras)
+    val mes: List<DiaResumo> = emptyList()       // todos os dias do mês atual (mapa)
 )
 
 class DetalhesViewModel(
@@ -66,7 +69,16 @@ class DetalhesViewModel(
                 ?: Estatisticas(0, 0, 0),
             carregandoFeriados = resultado == null,
             erroFeriados = (resultado as? ResultadoFeriados.Erro)?.mensagem,
-            proximoFeriado = mapa.filterKeys { it.isAfter(hoje) }.minByOrNull { it.key }?.toPair()
+            proximoFeriado = mapa.filterKeys { it.isAfter(hoje) }.minByOrNull { it.key }?.toPair(),
+            // Mesma regra da sequência, dia a dia, para os gráficos.
+            semana = habito?.let {
+                CalculadoraSequencia.resumir(it, registros, hoje.minusDays(6), hoje, mapa.keys, hoje)
+            }.orEmpty(),
+            mes = habito?.let {
+                CalculadoraSequencia.resumir(
+                    it, registros, hoje.withDayOfMonth(1), hoje.withDayOfMonth(hoje.lengthOfMonth()), mapa.keys, hoje
+                )
+            }.orEmpty()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetalhesUiState())
 

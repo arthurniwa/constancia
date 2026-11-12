@@ -78,6 +78,7 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 - **`ConstanciaApplication.kt`**: cria o `AppContainer` quando o app abre (registrada no `AndroidManifest.xml`).
 
 ### `domain`
+- **`CalculadoraSequencia.kt`** também expõe `estadoDoDia` (enum `EstadoDia`) e `resumir`, usados pelos gráficos. Assim a sequência e os gráficos seguem **a mesma regra**.
 - **`SenhaHasher.kt`**: PBKDF2-HMAC-SHA256, 120 000 iterações, salt aleatório de 16 bytes. Testado em `SenhaHasherTest.kt`.
 - **`CalculadoraSequencia.kt`**: regra de negócio pura. Cada dia é **concluído** (+1), **neutro** (não programado, feriado ou hoje ainda não feito) ou **falha** (quebra). Sequência atual = de hoje para trás até a primeira falha; recorde = maior sequência do início até hoje. Testada em `CalculadoraSequenciaTest.kt` (6 testes).
 
@@ -90,6 +91,8 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 - **`hoje/`**: `combine` de hábitos + registros do dia + feriado de hoje.
 - **`detalhes/`**: estatísticas + próximo feriado + compartilhar + excluir.
 - **`historico/`**: lista misturando registros e feriados (`sealed interface ItemHistorico`), calendário (`DatePickerDialog`), diálogos de editar/excluir, Snackbar.
+- **`componentes/Graficos.kt`**: `AnelProgresso` (desenhado com `Canvas` + `drawArc`, animado com `animateFloatAsState`), `CartaoMetrica`, `GraficoSemana` (barras feitas só com `Box` e `fillMaxHeight(fração)`) e `MapaMes` (grade de 7 colunas com `chunked(7)`).
+- **`theme/`**: tema escuro próprio (`darkColorScheme` com cores fixas, sem as cores automáticas do Android), fonte condensada para números (`EstiloNumero`) e rótulos em maiúsculas (`EstiloRotulo`).
 - **`util/`**: emojis/cores, formatação de datas em pt-BR, componentes de "carregando/erro de feriados".
 
 ---
@@ -162,6 +165,13 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 36. **Como cada usuário só vê os próprios hábitos?** `Habito.usuarioId` é FK para `Usuario`, e a consulta é `WHERE usuarioId = :usuarioId` com o id da sessão.
 37. **Por que "E-mail ou senha incorretos" e não "e-mail não existe"?** Para não revelar quais e-mails têm conta (enumeração de usuários).
 38. **Como você impede dois cadastros com o mesmo e-mail?** Índice único em `email`; o insert com `ABORT` lança `SQLiteConstraintException`, que viro em mensagem amigável. O e-mail é salvo em minúsculas.
+
+### Visual (tema e gráficos)
+39. **Como você desenhou os anéis de progresso?** Com `Canvas` e `drawArc`: primeiro a trilha cinza (360° ou 270°), depois o arco colorido com ângulo = 360° × fração. Começa em -90° (topo). `StrokeCap.Round` deixa as pontas arredondadas.
+40. **Como o anel anima?** `animateFloatAsState` interpola do valor antigo para o novo em 600 ms; a cada quadro o Compose redesenha o arco com o valor intermediário.
+41. **Como o gráfico de barras foi feito sem biblioteca?** Cada dia é uma `Box` cinza de altura fixa com outra `Box` dentro usando `fillMaxHeight(fração)`, alinhada embaixo.
+42. **Como o tema funciona?** `MaterialTheme(colorScheme = ...)` distribui as cores para todos os componentes (como variáveis CSS globais). O app é sempre escuro; `SystemBarStyle.dark` deixa os ícones da barra de status claros.
+43. **Por que os gráficos não recalculam a regra da sequência por conta própria?** Usam `CalculadoraSequencia.estadoDoDia`, a mesma função da sequência. Uma regra só, testada uma vez: o gráfico nunca contradiz o número.
 
 ### Compartilhamento
 26. **Como funciona o compartilhar?** `Intent(ACTION_SEND)` com `type = "text/plain"` e `EXTRA_TEXT`; `createChooser` mostra a lista de apps que aceitam texto.

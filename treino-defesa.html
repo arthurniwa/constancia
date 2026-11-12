@@ -318,9 +318,30 @@ const PERGUNTAS = [
     d: "Não existe um navigate() depois do login. Quem observa a sessão?",
     r: "A <code>RaizApp</code> observa o estado da sessão (<code>Carregando</code>, <code>Deslogado</code>, <code>Logado</code>). Quando a sessão muda, ela recompõe sozinha e mostra o app. O <code>key(usuario.id)</code> recria a navegação se outro usuário entrar.",
     a: "ui/navigation/RaizApp.kt" }
+  // ---------- Visual ----------
+  { t: "Visual", q: "Como você desenhou os anéis de progresso da tela Hoje?",
+    d: "Não é um componente pronto. Pense em <canvas> no HTML.",
+    r: "Com <code>Canvas</code> e <code>drawArc</code>: primeiro a trilha cinza (anel inteiro, ou 270° no medidor), depois o arco colorido com ângulo = 360° × fração da meta, começando em -90° (topo). <code>StrokeCap.Round</code> arredonda as pontas.",
+    a: "ui/componentes/Graficos.kt → AnelProgresso" },
+  { t: "Visual", q: "Como o anel \"enche\" com animação quando você marca um hábito?",
+    d: "Um estado animado que vai do valor antigo ao novo.",
+    r: "<code>animateFloatAsState</code> interpola do valor antigo para o novo em 600 ms. A cada quadro o Compose redesenha o arco com o valor intermediário.",
+    a: "Graficos.kt → AnelProgresso" },
+  { t: "Visual", q: "Como o gráfico dos últimos 7 dias foi feito sem biblioteca de gráficos?",
+    d: "Duas Box, uma dentro da outra.",
+    r: "Cada dia é uma <code>Box</code> cinza de altura fixa (a trilha) com outra <code>Box</code> dentro usando <code>fillMaxHeight(fração)</code>, alinhada embaixo. Feriados deixam a trilha âmbar; dias não programados ficam apagados.",
+    a: "Graficos.kt → GraficoSemana" },
+  { t: "Visual", q: "Como o tema escuro foi aplicado no app inteiro?",
+    d: "Um objeto de cores entregue ao MaterialTheme.",
+    r: "Criei um <code>darkColorScheme</code> com cores próprias e passei para <code>MaterialTheme</code>, que distribui as cores para Card, Button, NavigationBar etc. (como variáveis CSS globais). <code>SystemBarStyle.dark</code> deixa os ícones da barra de status claros.",
+    a: "ui/theme/Theme.kt · MainActivity.kt" },
+  { t: "Visual", q: "O gráfico e o mapa do mês podem mostrar algo diferente da sequência?",
+    d: "Quantas regras de \"dia feito / falha / neutro\" existem no código?",
+    r: "Não. Os gráficos usam <code>CalculadoraSequencia.estadoDoDia</code>, a mesma função que calcula a sequência. É uma regra só, testada uma vez.",
+    a: "domain/CalculadoraSequencia.kt" }
 ];
 
-const TEMAS = ["Todos", "Room", "ViewModel", "Compose", "API", "Compartilhar", "Sequência", "Login"];
+const TEMAS = ["Todos", "Room", "ViewModel", "Compose", "Visual", "API", "Compartilhar", "Sequência", "Login"];
 const CHAVE = "treino-constancia-v1";
 
 let marcas = {};               // índice da pergunta → "ok" | "warn"

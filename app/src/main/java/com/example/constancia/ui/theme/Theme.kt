@@ -1,58 +1,51 @@
 package com.example.constancia.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+/**
+ * Tema único, escuro, com cores próprias (sem as cores automáticas do papel de parede do Android).
+ * O MaterialTheme espalha estas cores para todos os componentes: Card, Button, NavigationBar...
+ * ≈ variáveis CSS globais (:root { --primary: ... }) num site.
+ */
+private val Esquema = darkColorScheme(
+    primary = Azul,
+    onPrimary = Color(0xFF00141F),
+    primaryContainer = Color(0xFF0B3A50),
+    onPrimaryContainer = Color(0xFFBFE9FF),
+    secondary = Verde,
+    onSecondary = Color(0xFF07210A),
+    secondaryContainer = Color(0xFF1F3A24),   // fundo do item selecionado na barra inferior
+    onSecondaryContainer = Color(0xFFCFF5D3),
+    tertiary = Ambar,
+    onTertiary = Color(0xFF2A1D00),
+    tertiaryContainer = Color(0xFF3A2C0A),    // cartões de feriado
+    onTertiaryContainer = Color(0xFFFFE3A6),
+    error = Vermelho,
+    errorContainer = Color(0xFF4A1518),
+    onErrorContainer = Color(0xFFFFD6D8),
+    background = Fundo,
+    onBackground = TextoPrincipal,
+    surface = Fundo,
+    onSurface = TextoPrincipal,
+    // Atenção: surfaceVariant precisa ser DIFERENTE de Cartao. O Material escolhe a cor do texto
+    // procurando a cor do fundo nesta lista; se Cartao também fosse surfaceVariant, o texto dos
+    // cartões sairia cinza (onSurfaceVariant) em vez de branco (onSurface).
+    surfaceVariant = CartaoAlto,
+    onSurfaceVariant = TextoSecundario,
+    // "Containers" de superfície: o Material 3 usa estes tons em Card, NavigationBar, diálogos...
+    surfaceContainerLowest = Fundo,
+    surfaceContainerLow = Superficie,
+    surfaceContainer = Superficie,
+    surfaceContainerHigh = Cartao,
+    surfaceContainerHighest = Cartao,
+    outline = Contorno,
+    outlineVariant = Trilha
 )
 
 @Composable
-fun ConstanciaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+fun ConstanciaTheme(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = Esquema, typography = Typography, content = content)
 }

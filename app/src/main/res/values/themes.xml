@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Constancia" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Tema escuro também na janela: evita um "flash" branco antes do Compose desenhar. -->
+    <style name="Theme.Constancia" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF0A0C0F</item>
+    </style>
 </resources>

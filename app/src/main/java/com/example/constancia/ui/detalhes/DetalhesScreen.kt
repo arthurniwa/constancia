@@ -43,13 +43,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.constancia.ui.AppViewModelProvider
-import com.example.constancia.ui.habitos.IconeHabito
 import com.example.constancia.ui.habitos.MensagemVazia
 import com.example.constancia.ui.util.CarregandoFeriados
 import com.example.constancia.ui.util.ErroFeriados
 import com.example.constancia.ui.util.formatoCurto
 import com.example.constancia.ui.util.resumo
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
+import com.example.constancia.ui.componentes.AnelProgresso
+import com.example.constancia.ui.componentes.CartaoMetrica
+import com.example.constancia.ui.componentes.GraficoSemana
+import com.example.constancia.ui.componentes.MapaMes
+import com.example.constancia.ui.componentes.TituloSecao
+import com.example.constancia.ui.theme.Ambar
+import com.example.constancia.ui.theme.EstiloRotulo
+import com.example.constancia.ui.theme.Laranja
+import com.example.constancia.ui.theme.Verde
+import com.example.constancia.ui.util.mesAno
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,23 +99,52 @@ fun DetalhesScreen(
                 modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconeHabito(habito.icone, habito.cor, Modifier.size(56.dp))
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(habito.diasDaSemana.resumo(), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            habito.meta?.let { "Meta: $it por dia" } ?: "Hábito do tipo feito/não feito",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                val e = estado.estatisticas
+                val cor = Color(habito.cor)
+                val hoje = LocalDate.now()
+
+                // Cabeçalho: anel com o progresso de hoje + dias e meta.
+                Card(Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        AnelProgresso(
+                            progresso = estado.semana.lastOrNull()?.fracao ?: 0f,   // último item = hoje
+                            cor = cor,
+                            espessura = 6.dp,
+                            modifier = Modifier.size(72.dp)
+                        ) { Text(habito.icone, style = MaterialTheme.typography.headlineMedium) }
+                        Spacer(Modifier.width(16.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("HOJE", style = EstiloRotulo, color = cor)
+                            Text(habito.diasDaSemana.resumo(), style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                habito.meta?.let { "Meta: $it por dia" } ?: "Hábito do tipo feito/não feito",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
-                val e = estado.estatisticas
-                CartaoNumero("🔥", "Sequência atual", e.sequenciaAtual)
-                CartaoNumero("🏆", "Recorde", e.recorde)
-                CartaoNumero("✅", "Total de dias concluídos", e.totalConcluidos)
+                // Três métricas lado a lado (weight(1f) divide a largura em partes iguais).
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CartaoMetrica("Sequência", "${e.sequenciaAtual}", dias(e.sequenciaAtual), Laranja, Modifier.weight(1f))
+                    CartaoMetrica("Recorde", "${e.recorde}", dias(e.recorde), Ambar, Modifier.weight(1f))
+                    CartaoMetrica("Total", "${e.totalConcluidos}", dias(e.totalConcluidos), Verde, Modifier.weight(1f))
+                }
+
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        TituloSecao("Últimos 7 dias")
+                        GraficoSemana(estado.semana, cor, hoje)
+                    }
+                }
+
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TituloSecao(hoje.mesAno())
+                        MapaMes(estado.mes, cor, hoje)
+                    }
+                }
 
                 Text(
                     "Dias não programados e feriados nacionais não quebram a sequência.",
@@ -182,19 +222,4 @@ private fun CartaoTexto(emoji: String, titulo: String, texto: String) {
     }
 }
 
-@Composable
-private fun CartaoNumero(emoji: String, titulo: String, valor: Int) {
-    Card(Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(emoji, style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(titulo, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    if (valor == 1) "1 dia" else "$valor dias",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            }
-        }
-    }
-}
+private fun dias(n: Int) = if (n == 1) "dia" else "dias"

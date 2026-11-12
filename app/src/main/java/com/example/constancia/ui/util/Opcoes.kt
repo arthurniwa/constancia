@@ -17,6 +17,22 @@ val OPCOES_COR = listOf(
     0xFF795548.toInt()  // marrom
 )
 
+/** Atalhos de unidade no formulário (o usuário também pode digitar outra). */
+val OPCOES_UNIDADE = listOf("copos", "km", "páginas", "minutos", "vezes", "litros", "passos")
+
+/** Sugere a unidade pelo nome do hábito ("Correr" → "km"); null se não reconhecer. */
+fun unidadeSugerida(nome: String): String? {
+    val n = nome.lowercase()
+    return when {
+        listOf("água", "agua").any { it in n } -> "copos"
+        listOf("corr", "caminh", "pedal", "bike", "nad").any { it in n } -> "km"
+        listOf("ler", "leitura", "livro").any { it in n } -> "páginas"
+        listOf("medit", "estud", "along", "yoga").any { it in n } -> "minutos"
+        "passo" in n -> "passos"
+        else -> null
+    }
+}
+
 private val NOMES_CURTOS = listOf("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
 
 /** Função de extensão: "Seg", "Ter"... (value 1 = segunda). */

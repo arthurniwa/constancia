@@ -11,6 +11,7 @@ import com.example.constancia.data.repository.HabitoRepository
 import com.example.constancia.ui.util.OPCOES_COR
 import com.example.constancia.ui.util.OPCOES_ICONE
 import com.example.constancia.ui.util.SUGESTOES
+import com.example.constancia.ui.util.unidadeSugerida
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -24,12 +25,15 @@ data class HabitoFormUiState(
     val icone: String = OPCOES_ICONE.first(),
     val cor: Int = OPCOES_COR.first(),
     val dias: Set<DayOfWeek> = DayOfWeek.entries.toSet(),   // padrão: todos os dias
+    val medirQuantidade: Boolean = false,   // false = feito/não feito; true = meta + unidade
     val metaTexto: String = "",
+    val unidade: String = "",
     val horarioLembrete: LocalTime? = null,
     val dataCriacao: LocalDate = LocalDate.now(),
     val erroNome: String? = null,
     val erroDias: String? = null,
     val erroMeta: String? = null,
+    val erroUnidade: String? = null,
     val carregando: Boolean = false
 ) {
     val ehEdicao: Boolean get() = id != 0L
@@ -60,7 +64,8 @@ class HabitoFormViewModel(
         // Veio de uma sugestão da tela Hoje? Abre o form preenchido.
         SUGESTOES.getOrNull(sugestao)?.let { s ->
             if (habitoId == 0L) {
-                uiState = uiState.copy(nome = s.nome, icone = s.icone, cor = s.cor, dias = s.dias, metaTexto = s.meta?.toString() ?: "")
+                uiState = uiState.copy(nome = s.nome, icone = s.icone, cor = s.cor, dias = s.dias,
+                    medirQuantidade = s.meta != null, metaTexto = s.meta?.toString() ?: "", unidade = s.unidade)
             }
         }
         if (habitoId != 0L) {
@@ -73,7 +78,10 @@ class HabitoFormViewModel(
     }
 
     // Eventos da tela. copy() = cópia mudando só alguns campos.
-    fun alterarNome(valor: String) { uiState = uiState.copy(nome = valor, erroNome = null) }
+    fun alterarNome(valor: String) {
+        uiState = uiState.copy(nome = valor, erroNome = null)
+        sugerirUnidade()
+    }
     fun alterarIcone(valor: String) { uiState = uiState.copy(icone = valor) }
     fun alterarCor(valor: Int) { uiState = uiState.copy(cor = valor) }
     fun alterarMeta(valor: String) {
@@ -82,6 +90,21 @@ class HabitoFormViewModel(
             uiState = uiState.copy(metaTexto = valor, erroMeta = null)
         }
     }
+    fun alterarUnidade(valor: String) {
+        if (valor.length <= 15) uiState = uiState.copy(unidade = valor, erroUnidade = null)
+    }
+    fun alterarMedirQuantidade(valor: Boolean) {
+        uiState = uiState.copy(medirQuantidade = valor, erroMeta = null, erroUnidade = null)
+        sugerirUnidade()
+    }
+
+    // Unidade vazia? Preenche pelo nome ("Correr" → km). Não sobrescreve o que o usuário escolheu.
+    private fun sugerirUnidade() {
+        if (uiState.medirQuantidade && uiState.unidade.isBlank()) {
+            unidadeSugerida(uiState.nome)?.let { uiState = uiState.copy(unidade = it) }
+        }
+    }
+
     fun alternarDia(dia: DayOfWeek) {
         val novos = if (dia in uiState.dias) uiState.dias - dia else uiState.dias + dia
         uiState = uiState.copy(dias = novos, erroDias = null)
@@ -98,11 +121,14 @@ class HabitoFormViewModel(
             else -> null
         }
         val erroDias = if (uiState.dias.isEmpty()) "Escolha pelo menos um dia" else null
-        val erroMeta = if (uiState.metaTexto.isNotEmpty() && (meta == null || meta <= 0))
-            "A meta deve ser maior que zero" else null
+        // Só valida meta/unidade no modo "Quantidade".
+        val erroMeta = if (uiState.medirQuantidade && (meta == null || meta <= 0))
+            "Informe uma quantidade maior que zero" else null
+        val erroUnidade = if (uiState.medirQuantidade && uiState.unidade.isBlank())
+            "Informe a unidade (ex.: copos, km)" else null
 
-        uiState = uiState.copy(erroNome = erroNome, erroDias = erroDias, erroMeta = erroMeta)
-        return erroNome == null && erroDias == null && erroMeta == null
+        uiState = uiState.copy(erroNome = erroNome, erroDias = erroDias, erroMeta = erroMeta, erroUnidade = erroUnidade)
+        return listOf(erroNome, erroDias, erroMeta, erroUnidade).all { it == null }
     }
 
     /** CREATE ou UPDATE. `suspend`: a tela espera salvar antes de voltar. */
@@ -122,7 +148,9 @@ private fun Habito.paraFormState() = HabitoFormUiState(
     icone = icone,
     cor = cor,
     dias = diasDaSemana,
+    medirQuantidade = meta != null,
     metaTexto = meta?.toString() ?: "",
+    unidade = unidade ?: "",
     horarioLembrete = horarioLembrete,
     dataCriacao = dataCriacao
 )
@@ -134,7 +162,9 @@ private fun HabitoFormUiState.paraHabito() = Habito(
     icone = icone,
     cor = cor,
     diasDaSemana = dias,
-    meta = metaTexto.toIntOrNull(),
+    // Modo feito/não feito: grava meta e unidade como null.
+    meta = if (medirQuantidade) metaTexto.toIntOrNull() else null,
+    unidade = if (medirQuantidade) unidade.trim().lowercase() else null,
     horarioLembrete = horarioLembrete,
     dataCriacao = dataCriacao
 )

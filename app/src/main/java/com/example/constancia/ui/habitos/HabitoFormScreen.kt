@@ -43,6 +43,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.constancia.ui.AppViewModelProvider
 import com.example.constancia.ui.util.OPCOES_COR
 import com.example.constancia.ui.util.OPCOES_ICONE
+import com.example.constancia.ui.util.OPCOES_UNIDADE
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import com.example.constancia.ui.util.nomeCurto
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -154,19 +159,58 @@ fun HabitoFormScreen(
                 }
             }
 
-            OutlinedTextField(
-                value = estado.metaTexto,
-                onValueChange = viewModel::alterarMeta,
-                label = { Text("Meta diária (opcional)") },
-                placeholder = { Text("Ex.: 8 (copos de água)") },
-                isError = estado.erroMeta != null,
-                supportingText = {
-                    Text(estado.erroMeta ?: "Deixe vazio para hábitos do tipo feito/não feito")
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Secao("Como medir") {
+                // Dois botões lado a lado: só um fica marcado (≈ radio button).
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = !estado.medirQuantidade,
+                        onClick = { viewModel.alterarMedirQuantidade(false) },
+                        shape = SegmentedButtonDefaults.itemShape(0, 2)
+                    ) { Text("Feito / não feito") }
+                    SegmentedButton(
+                        selected = estado.medirQuantidade,
+                        onClick = { viewModel.alterarMedirQuantidade(true) },
+                        shape = SegmentedButtonDefaults.itemShape(1, 2)
+                    ) { Text("Quantidade") }
+                }
+
+                // Só aparece no modo "Quantidade".
+                if (estado.medirQuantidade) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = estado.metaTexto,
+                            onValueChange = viewModel::alterarMeta,
+                            label = { Text("Meta por dia") },
+                            placeholder = { Text("Ex.: 8") },
+                            isError = estado.erroMeta != null,
+                            supportingText = estado.erroMeta?.let { { Text(it) } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = estado.unidade,
+                            onValueChange = viewModel::alterarUnidade,
+                            label = { Text("Unidade") },
+                            placeholder = { Text("Ex.: copos") },
+                            isError = estado.erroUnidade != null,
+                            supportingText = estado.erroUnidade?.let { { Text(it) } },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Atalhos: um toque preenche a unidade.
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OPCOES_UNIDADE.forEach { u ->
+                            FilterChip(
+                                selected = estado.unidade.equals(u, ignoreCase = true),
+                                onClick = { viewModel.alterarUnidade(u) },
+                                label = { Text(u) }
+                            )
+                        }
+                    }
+                }
+            }
 
             Button(
                 onClick = {

@@ -12,6 +12,7 @@ import com.example.constancia.ui.habitos.HabitoFormViewModel
 import com.example.constancia.ui.habitos.HabitosViewModel
 import com.example.constancia.ui.historico.HistoricoViewModel
 import com.example.constancia.ui.hoje.HojeViewModel
+import com.example.constancia.ui.perfil.PerfilViewModel
 
 /**
  * Fábrica de ViewModels: cria cada um passando os repositórios (como DI no .NET).
@@ -52,6 +53,7 @@ object AppViewModelProvider {   // `object` = singleton
                 feriadoRepository = app().container.feriadoRepository
             )
         }
+        initializer { PerfilViewModel(app().container.perfilRepository, usuarioLogado()) }
     }
 }
 

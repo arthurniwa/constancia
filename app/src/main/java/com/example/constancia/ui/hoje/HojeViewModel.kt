@@ -33,6 +33,7 @@ data class HojeUiState(
     val data: LocalDate = LocalDate.now(),
     val existeAlgumHabito: Boolean = false,   // diferencia "não criou nada" de "nada para hoje"
     val itens: List<HabitoDoDia> = emptyList(),
+    val foraDeHoje: List<Habito> = emptyList(),// hábitos que não valem hoje (ex.: só Seg/Qua/Sex)
     val feriadoHoje: String? = null,          // nome do feriado, se hoje for feriado nacional
     val semana: List<DiaResumo> = emptyList(),// % concluído em cada um dos últimos 7 dias
     val dica: Dica = DICAS.first(),
@@ -81,6 +82,7 @@ class HojeViewModel(
             itens = habitos
                 .filter { it.programadoPara(hoje) }
                 .map { HabitoDoDia(it, registroDeHojePorHabito[it.id]) },
+            foraDeHoje = habitos.filterNot { it.programadoPara(hoje) },
             feriadoHoje = feriado,
             semana = resumoDaSemana(habitos, registrosSemana),
             dica = DICAS[dica],

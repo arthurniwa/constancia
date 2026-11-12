@@ -6,6 +6,7 @@ import com.example.constancia.data.remote.BrasilApiService
 import com.example.constancia.data.repository.AuthRepository
 import com.example.constancia.data.repository.FeriadoRepository
 import com.example.constancia.data.repository.HabitoRepository
+import com.example.constancia.data.repository.PerfilRepository
 import com.example.constancia.data.repository.RegistroRepository
 import com.example.constancia.data.repository.SessaoRepository
 import retrofit2.Retrofit
@@ -30,4 +31,6 @@ class AppContainer(context: Context) {
     val habitoRepository by lazy { HabitoRepository(database.habitoDao()) }
     val registroRepository by lazy { RegistroRepository(database.registroDiarioDao()) }
     val feriadoRepository by lazy { FeriadoRepository(brasilApi) }
+
+    val perfilRepository by lazy { PerfilRepository(database.usuarioDao(), context) }
 }

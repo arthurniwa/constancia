@@ -18,5 +18,6 @@ data class Usuario(
     val email: String,          // sempre em minúsculas
     val senhaHash: String,      // Base64
     val salt: String,           // Base64
-    val dataCriacao: LocalDate = LocalDate.now()
+    val dataCriacao: LocalDate = LocalDate.now(),
+    val fotoCaminho: String? = null     // null = sem foto (mostra só as iniciais)
 )

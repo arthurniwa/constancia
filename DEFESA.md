@@ -132,7 +132,7 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 5. **Como você impede dois registros no mesmo dia?** Índice único em `(habitoId, data)`. A regra fica garantida no próprio banco.
 6. **Para que servem os TypeConverters?** O SQLite só guarda tipos simples; os converters transformam `LocalDate`, `LocalTime` e `Set<DayOfWeek>` em `Long`/`String` e de volta.
 7. **Por que o banco é singleton?** Abrir o banco é caro e várias instâncias podem conflitar. `@Volatile` + `synchronized` garantem uma só instância mesmo com várias threads.
-8. **E se você mudar uma entidade?** Tenho que subir `version`. Configurei `fallbackToDestructiveMigration` (recria o banco); num app real eu escreveria uma `Migration`.
+8. **E se você mudar uma entidade?** Subo a `version` e escrevo uma `Migration` (≈ migration do EF). O banco está na versão 4: `MIGRACAO_2_3` adiciona `usuarios.fotoCaminho` e `MIGRACAO_3_4` adiciona `habitos.unidade`, ambas com `ALTER TABLE ... ADD COLUMN`, sem perder dados. O `fallbackToDestructiveMigration` só entra se faltar alguma migração (aí recria o banco).
 9. **Por que leituras retornam `Flow` e escritas são `suspend`?** O `Flow` emite de novo sempre que a tabela muda (tela atualiza sozinha). Escrita é uma operação única que precisa sair da thread principal, então é `suspend`.
 
 ### Coroutines / Flow / ViewModel
@@ -185,6 +185,12 @@ Isso é **MVVM**. Em .NET seria: componente Blazor → serviço/ViewModel → re
 28. **Se o usuário ainda não marcou hoje, a sequência zera?** Não: "hoje" é neutro enquanto o dia não acabou.
 29. **E num sábado, para um hábito de segunda a sexta?** Neutro: não soma e não quebra.
 30. **Como você testou a sequência?** Testes unitários JUnit em `CalculadoraSequenciaTest.kt` (rodam sem emulador): dias seguidos, dia esquecido, feriado, fim de semana e meta não atingida.
+
+### Perfil e metas com unidade
+46. **Como funciona a tela de Perfil?** `PerfilViewModel` lê o usuário uma vez com `first()` (para o Flow não sobrescrever o que está sendo digitado), valida nome/e-mail e chama `PerfilRepository.salvar`, que usa `@Update(onConflict = ABORT)`: e-mail de outra conta bate no índice único e vira "Este e-mail já está em uso".
+47. **Como a foto é escolhida e salva?** `rememberLauncherForActivityResult(PickVisualMedia())` abre o seletor de fotos do Android (sem pedir permissão). A `Uri` devolvida é temporária, então copio a imagem para `filesDir` (pasta privada do app) em `Dispatchers.IO` e guardo só o caminho no banco. O Coil (`AsyncImage`) desenha o arquivo; o nome leva a hora para o cache não mostrar a foto antiga.
+48. **Como a meta ficou "dinâmica"?** O hábito tem `meta` + `unidade` (copos, km, páginas...). No formulário a pessoa escolhe "Feito / não feito" ou "Quantidade"; a unidade é sugerida pelo nome (`unidadeSugerida`: "Correr" → km) sem sobrescrever o que a pessoa escolheu. O `+`/`−` usa `passo` = 1/10 da meta (propriedade calculada, não é coluna).
+49. **Por que um hábito novo não aparece em "Hábitos de hoje"?** Porque não está programado para hoje (ex.: Seg/Qua/Sex numa quinta). Ele aparece em "Fora de hoje", sem botão de marcar, para não contar como pendente nem quebrar a sequência.
 
 ---
 

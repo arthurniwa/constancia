@@ -158,7 +158,7 @@ private fun HabitoItem(
                     overflow = TextOverflow.Ellipsis   // nome longo vira "..."
                 )
                 val detalhe = habito.diasDaSemana.resumo() +
-                    (habito.meta?.let { " · meta $it/dia" } ?: "")
+                    (habito.meta?.let { " · ${habito.comUnidade(it)}/dia" } ?: "")
                 Text(detalhe, style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onEditar) { Icon(Icons.Default.Edit, contentDescription = "Editar") }

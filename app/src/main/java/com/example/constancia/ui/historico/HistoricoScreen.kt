@@ -165,9 +165,9 @@ fun HistoricoScreen(
                     }
                     if (estado.habito?.meta != null) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            FilledTonalIconButton(onClick = { viewModel.alterarValorEdicao(-1) }) { Text("−") }
-                            Text("${e.valor} de ${estado.habito?.meta}", style = MaterialTheme.typography.titleMedium)
-                            FilledTonalIconButton(onClick = { viewModel.alterarValorEdicao(+1) }) { Text("+") }
+                            FilledTonalIconButton(onClick = { viewModel.alterarValorEdicao(-(estado.habito?.passo ?: 1)) }) { Text("−") }
+                            Text("${e.valor} de ${estado.habito?.let { h -> h.meta?.let { h.comUnidade(it) } }}", style = MaterialTheme.typography.titleMedium)
+                            FilledTonalIconButton(onClick = { viewModel.alterarValorEdicao(estado.habito?.passo ?: 1) }) { Text("+") }
                         }
                     }
                 }
@@ -201,7 +201,7 @@ private fun ItemRegistro(
             Column(Modifier.weight(1f)) {
                 Text(registro.data.formatoCurto(), style = MaterialTheme.typography.titleMedium)
                 val texto = if (habito.meta == null) "Feito ✓"
-                else "${registro.valor} de ${habito.meta}" + if (registro.valor >= habito.alvoDiario) " ✓" else ""
+                else "${registro.valor} de ${habito.comUnidade(habito.meta)}" + if (registro.valor >= habito.alvoDiario) " ✓" else ""
                 Text(texto, style = MaterialTheme.typography.bodyMedium)
                 if (nomeFeriado != null) {
                     Text("🎉 $nomeFeriado", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)

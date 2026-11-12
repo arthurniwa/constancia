@@ -54,6 +54,8 @@ import com.example.constancia.ui.theme.Ambar
 import com.example.constancia.ui.util.Dica
 import com.example.constancia.ui.util.SUGESTOES
 import com.example.constancia.ui.util.Sugestao
+import com.example.constancia.ui.util.resumo
+import com.example.constancia.data.local.Habito
 
 /** Tela "Hoje": medidor do dia, gráfico da semana, hábitos, dica e sugestões. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,6 +133,13 @@ fun HojeScreen(
                         )
                     }
                 }
+                // Hábitos que existem mas não valem hoje: mostra para o usuário não achar que sumiram.
+                if (estado.foraDeHoje.isNotEmpty()) {
+                    item { TituloSecao("Fora de hoje", Modifier.padding(top = 8.dp, start = 4.dp)) }
+                    items(estado.foraDeHoje, key = { "fora_${it.id}" }) { habito ->
+                        ItemForaDeHoje(habito, onClick = { onAbrir(habito.id) })
+                    }
+                }
                 item { CartaoDica(estado.dica, onOutra = viewModel::proximaDica) }
                 if (estado.sugestoes.isNotEmpty()) {
                     item { TituloSecao("Sugestões para começar", Modifier.padding(top = 8.dp, start = 4.dp)) }
@@ -203,6 +212,25 @@ private fun ResumoDoDia(concluidos: Int, total: Int, temHabitos: Boolean, onCria
     }
 }
 
+/** Linha simples, sem botão de marcar: o hábito não vale hoje. */
+@Composable
+private fun ItemForaDeHoje(habito: Habito, onClick: () -> Unit) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(habito.icone, style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(habito.nome, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "Programado para: ${habito.diasDaSemana.resumo()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ItemHoje(
     item: HabitoDoDia,
@@ -229,7 +257,7 @@ private fun ItemHoje(
                 Text(habito.nome, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val (texto, corTexto) = when {
                     item.concluido -> "Concluído" to Verde
-                    habito.meta != null -> "${item.valor} de ${habito.meta}" to MaterialTheme.colorScheme.onSurfaceVariant
+                    habito.meta != null -> "${item.valor} de ${habito.comUnidade(habito.meta)}" to MaterialTheme.colorScheme.onSurfaceVariant
                     else -> "Pendente" to MaterialTheme.colorScheme.onSurfaceVariant
                 }
                 Text(texto, style = MaterialTheme.typography.bodySmall, color = corTexto)
@@ -247,12 +275,15 @@ private fun ItemHoje(
                     Icon(Icons.Default.Check, contentDescription = if (item.concluido) "Desmarcar" else "Marcar como feito")
                 }
             } else {
+                // Passo proporcional à meta: com meta 30, cada toque soma 3.
+                val passo = habito.passo
+                val sufixo = if (passo > 1) "$passo" else ""
                 // Não há ícone de "menos" padrão: usamos texto.
-                FilledTonalIconButton(onClick = { onSomar(-1) }, enabled = item.valor > 0) {
-                    Text("−", style = MaterialTheme.typography.titleLarge)
+                FilledTonalIconButton(onClick = { onSomar(-passo) }, enabled = item.valor > 0) {
+                    Text("−$sufixo", style = if (passo > 1) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleLarge)
                 }
-                FilledTonalIconButton(onClick = { onSomar(+1) }) {
-                    Text("+", style = MaterialTheme.typography.titleLarge)
+                FilledTonalIconButton(onClick = { onSomar(+passo) }) {
+                    Text("+$sufixo", style = if (passo > 1) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleLarge)
                 }
             }
         }

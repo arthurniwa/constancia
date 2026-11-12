@@ -65,6 +65,9 @@ dependencies {
     // Retrofit (HTTP) + Gson (JSON → objeto) — ≈ HttpClient + System.Text.Json
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+
+    // Coil: carrega imagens (foto de perfil) de arquivo/URL
+    implementation(libs.coil.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

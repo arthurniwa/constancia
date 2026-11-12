@@ -44,6 +44,9 @@ data class Habito(
     // null = hábito feito/não feito; com valor = meta numérica (ex.: 8 copos).
     val meta: Int? = null,
 
+    // Unidade da meta: "copos", "km", "páginas"... (null = hábito feito/não feito).
+    val unidade: String? = null,
+
     val horarioLembrete: LocalTime? = null,
 
     val dataCriacao: LocalDate = LocalDate.now()
@@ -51,6 +54,13 @@ data class Habito(
     /** Quanto precisa registrar no dia para contar como feito. */
     val alvoDiario: Int
         get() = meta ?: 1
+
+    /** Quanto o +/− soma: 1/10 da meta (30 min → 3; 10000 passos → 1000), no mínimo 1. */
+    val passo: Int
+        get() = maxOf(1, (meta ?: 1) / 10)
+
+    /** Ex.: "6 copos". */
+    fun comUnidade(valor: Int): String = listOfNotNull(valor.toString(), unidade).joinToString(" ")
 
     /** O hábito está programado para esse dia da semana? */
     fun programadoPara(data: LocalDate): Boolean = data.dayOfWeek in diasDaSemana

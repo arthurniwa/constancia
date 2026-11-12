@@ -36,9 +36,9 @@ private val DIAS_UTEIS = setOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WE
 
 val SUGESTOES = listOf(
     Sugestao("Beber água", "💧", OPCOES_COR[1], meta = 8, unidade = "copos"),
-    Sugestao("Caminhar 30 min", "🏃", OPCOES_COR[0]),
+    Sugestao("Correr", "🏃", OPCOES_COR[0], meta = 5, unidade = "km"),
     Sugestao("Ler", "📚", OPCOES_COR[2], meta = 10, unidade = "páginas"),
-    Sugestao("Meditar", "🧘", OPCOES_COR[4]),
+    Sugestao("Meditar", "🧘", OPCOES_COR[4], meta = 10, unidade = "minutos"),
     Sugestao("Dormir antes das 23h", "💤", OPCOES_COR[5]),
     Sugestao("Comer uma fruta", "🍎", OPCOES_COR[6], meta = 2, unidade = "frutas"),
     Sugestao("Treinar", "💪", OPCOES_COR[3], dias = DIAS_UTEIS)

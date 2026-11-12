@@ -117,7 +117,7 @@ fun DetalhesScreen(
                             Text("HOJE", style = EstiloRotulo, color = cor)
                             Text(habito.diasDaSemana.resumo(), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                habito.meta?.let { "Meta: $it por dia" } ?: "Hábito do tipo feito/não feito",
+                                habito.meta?.let { "Meta: ${habito.comUnidade(it)} por dia" } ?: "Hábito do tipo feito/não feito",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

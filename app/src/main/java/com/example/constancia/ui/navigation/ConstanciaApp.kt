@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,11 +27,13 @@ import com.example.constancia.ui.habitos.HabitoFormScreen
 import com.example.constancia.ui.habitos.HabitosScreen
 import com.example.constancia.ui.historico.HistoricoScreen
 import com.example.constancia.ui.hoje.HojeScreen
+import com.example.constancia.ui.perfil.PerfilScreen
 
 /** Rotas do app (como @page no Blazor). */
 object Rotas {
     const val HOJE = "hoje"
     const val HABITOS = "habitos"
+    const val PERFIL = "perfil"
     // id 0 = criar; sugestao = índice em SUGESTOES que preenche o form (-1 = nenhuma)
     const val HABITO_FORM = "habito_form?id={id}&sugestao={sugestao}"
     fun habitoForm(id: Long = 0L, sugestao: Int = -1) = "habito_form?id=$id&sugestao=$sugestao"
@@ -45,7 +48,8 @@ private data class Aba(val rota: String, val titulo: String, val icone: ImageVec
 
 private val ABAS = listOf(
     Aba(Rotas.HOJE, "Hoje", Icons.Default.Home),
-    Aba(Rotas.HABITOS, "Hábitos", Icons.AutoMirrored.Filled.List)
+    Aba(Rotas.HABITOS, "Hábitos", Icons.AutoMirrored.Filled.List),
+    Aba(Rotas.PERFIL, "Perfil", Icons.Default.Person)
 )
 
 @Composable
@@ -101,6 +105,10 @@ fun ConstanciaApp(nomeUsuario: String, onSair: () -> Unit) {
                     onAbrir = { id -> navController.navigate(Rotas.detalhes(id)) },
                     onEditar = { id -> navController.navigate(Rotas.habitoForm(id)) }
                 )
+            }
+
+            composable(Rotas.PERFIL) {
+                PerfilScreen(onSair = onSair)
             }
 
             composable(
